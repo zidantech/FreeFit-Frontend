@@ -81,36 +81,38 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 // ─── Auth Module ────────────────────────────────────────────────────
 
 export const authAPI = {
-  register: (data: { email: string; password: string; confirm_password: string }) =>
-    fetchWithAuth(`${API_URL}/auth/register/`, {
+  register: async (email: string, password: string, confirmPassword: string) => {
+    return fetchAPI("/auth/register/", {
       method: "POST",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify({ email, password, confirm_password: confirmPassword }),
+    });
+  },
 
-  login: (data: { email: string; password: string }) =>
-    fetchWithAuth(`${API_URL}/auth/login/`, {
+  login: async (email: string, password: string) => {
+    const data = await fetchAPI("/auth/login/", {
       method: "POST",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify({ email, password }),
+    });
+    if (data.access && data.refresh) {
+      setTokens(data.access, data.refresh);
+    }
+    return data;
+  },
 
   logout: () => {
+    clearTokens();
     if (typeof window !== "undefined") {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("user");
       window.location.href = "/signin";
     }
   },
 
-  isAuthenticated: () =>
-    typeof window !== "undefined" && !!localStorage.getItem("access_token"),
+  isAuthenticated: () => !!getAccessToken(),
 
   getTokens: () => ({
-    access: typeof window !== "undefined" ? localStorage.getItem("access_token") : null,
-    refresh: typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null,
+    access: getAccessToken(),
+    refresh: getRefreshToken(),
   }),
 };
-
 // ─── User Module ────────────────────────────────────────────────────
 
 export const userAPI = {
