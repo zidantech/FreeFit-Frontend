@@ -11,8 +11,9 @@ interface Team {
 
 interface MatchCardProps {
   id: string;
-  team1: Team;
-  team2: Team;
+  team1?: Team;
+  team2?: Team;
+  teams?: Team[];           // ← backward compat: array of 2 teams
   score1?: number;
   score2?: number;
   status: "live" | "upcoming" | "past";
@@ -26,6 +27,7 @@ export default function MatchCard({
   id,
   team1,
   team2,
+  teams,
   score1,
   score2,
   status,
@@ -34,6 +36,10 @@ export default function MatchCard({
   streamUrl,
   sport,
 }: MatchCardProps) {
+  // Normalize: support both team1/team2 and teams[] props
+  const t1 = team1 || teams?.[0] || { name: "Home" };
+  const t2 = team2 || teams?.[1] || { name: "Away" };
+
   const formatTime = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -74,14 +80,14 @@ export default function MatchCard({
         <div className="flex items-center justify-between">
           {/* Team 1 */}
           <div className="flex flex-col items-center gap-2 flex-1">
-            {team1.logo ? (
-              <img src={team1.logo} alt={team1.name} className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
+            {t1.logo ? (
+              <img src={t1.logo} alt={t1.name} className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
             ) : (
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-sm font-bold text-gray-300">
-                {team1.name.slice(0, 2).toUpperCase()}
+                {t1.name.slice(0, 2).toUpperCase()}
               </div>
             )}
-            <span className="text-white text-xs sm:text-sm font-medium text-center">{team1.name}</span>
+            <span className="text-white text-xs sm:text-sm font-medium text-center">{t1.name}</span>
           </div>
 
           {/* Score / VS / Time */}
@@ -108,14 +114,14 @@ export default function MatchCard({
 
           {/* Team 2 */}
           <div className="flex flex-col items-center gap-2 flex-1">
-            {team2.logo ? (
-              <img src={team2.logo} alt={team2.name} className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
+            {t2.logo ? (
+              <img src={t2.logo} alt={t2.name} className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
             ) : (
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-sm font-bold text-gray-300">
-                {team2.name.slice(0, 2).toUpperCase()}
+                {t2.name.slice(0, 2).toUpperCase()}
               </div>
             )}
-            <span className="text-white text-xs sm:text-sm font-medium text-center">{team2.name}</span>
+            <span className="text-white text-xs sm:text-sm font-medium text-center">{t2.name}</span>
           </div>
         </div>
       </div>
