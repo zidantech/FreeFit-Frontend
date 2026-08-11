@@ -1,84 +1,113 @@
 // lib/api.ts
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://free-fit-backend.onrender.com/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://free-fit-backend.onrender.com/api";
 
-// ─── Debug logger ───────────────────────────────────────────────────
+// ─── Token Helpers ──────────────────────────────────────────────────
 
-function log(method: string, url: string, body?: any) {
-  console.log(`[API ${method}]`, url, body || "");
-}
-
-// ─── Extract Django/DRF error message ───────────────────────────────
-
-async function getErrorMessage(res: Response): Promise<string> {
-  try {
-    const data = await res.json();
-    console.error("[API ERROR BODY]", data);
-
-    // DRF non-field errors: { non_field_errors: ["Unable to log in..."] }
-    if (data.non_field_errors) {
-      return data.non_field_errors.join(", ");
-    }
-
-    // DRF field errors: { email: ["This field is required."], password: ["..."] }
-    const fields = Object.keys(data);
-    if (fields.length > 0) {
-      const msgs: string[] = [];
-      for (const key of fields) {
-        if (Array.isArray(data[key])) msgs.push(`${key}: ${data[key][0]}`);
-        else if (typeof data[key] === "string") msgs.push(`${key}: ${data[key]}`);
-      }
-      if (msgs.length > 0) return msgs.join(" | ");
-    }
-
-    if (data.detail) return data.detail;
-    if (data.message) return data.message;
-    return JSON.stringify(data);
-  } catch {
-    const text = await res.text().catch(() => "");
-    return text || `HTTP ${res.status}`;
+const getAccessToken = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("access_token");
   }
-}
+  return null;
+};
 
-// ─── Fetch with auth (used for ALL requests including login) ────────
-
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-
-  // Merge any custom headers from options
-  if (options.headers) {
-    const custom = options.headers as Record<string, string>;
-    Object.assign(headers, custom);
+const getRefreshToken = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("refresh_token");
   }
+  return null;
+};
 
-  // Log the exact body being sent
-  let parsedBody: any;
-  if (options.body) {
-    try {
-      parsedBody = JSON.parse(options.body as string);
-    } catch {
-      parsedBody = options.body;
-    }
+const setTokens = (access: string, refresh: string) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("access_token", access);
+    localStorage.setItem("refresh_token", refresh);
   }
+};
 
-  log(options.method || "GET", url, parsedBody);
+const clearTokens = () => {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("interests");
+  }
+};
 
-  const res = await fetch(url, { ...options, headers });
+// ─── Response Handler ───────────────────────────────────────────────
 
-  if (!res.ok) {
-    const msg = await getErrorMessage(res);
+async function handleResponse(response: Response) {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    const msg =
+      error.non_field_errors?.[0] ||
+      error.detail ||
+      error.message ||
+      Object.entries(error)
+        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v[0] : v}`)
+        .join(" | ") ||
+      `HTTP ${response.status}`;
     throw new Error(msg);
   }
-
-  return res.json();
+  return response.json();
 }
 
-// ─── Auth Module ────────────────────────────────────────────────────
+// ─── Core Fetch ─────────────────────────────────────────────────────
+
+async function fetchAPI(endpoint: string, options: RequestInit = {}) {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  const token = getAccessToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetch(url, { ...options, headers });
+
+    if (response.status === 401 && getRefreshToken()) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        headers["Authorization"] = `Bearer ${getAccessToken()}`;
+        const retryResponse = await fetch(url, { ...options, headers });
+        return handleResponse(retryResponse);
+      }
+    }
+
+    return handleResponse(response);
+  } catch (error) {
+    console.error("API Error:", error);
+    throw error;
+  }
+}
+
+async function refreshAccessToken() {
+  try {
+    const refresh = getRefreshToken();
+    if (!refresh) return false;
+
+    const response = await fetch(`${API_BASE_URL}/auth/login/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      setTokens(data.access, data.refresh);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+// ─── Auth ───────────────────────────────────────────────────────────
 
 export const authAPI = {
   register: async (email: string, password: string, confirmPassword: string) => {
@@ -113,29 +142,32 @@ export const authAPI = {
     refresh: getRefreshToken(),
   }),
 };
-// ─── User Module ────────────────────────────────────────────────────
+
+// ─── User ───────────────────────────────────────────────────────────
 
 export const userAPI = {
-  getProfile: () => fetchWithAuth(`${API_URL}/users/me/`),
-  updateProfile: (data: any) =>
-    fetchWithAuth(`${API_URL}/users/me/`, {
+  getProfile: async () => fetchAPI("/users/me/"),
+  updateProfile: async (profileData: { name?: string; avatar?: string; interests?: string[] }) => {
+    return fetchAPI("/users/me/", {
       method: "PATCH",
-      body: JSON.stringify(data),
-    }),
-  updateInterests: (interests: string[]) =>
-    fetchWithAuth(`${API_URL}/users/me/interests/`, {
+      body: JSON.stringify(profileData),
+    });
+  },
+  updateInterests: async (interests: string[]) => {
+    return fetchAPI("/users/me/interests/", {
       method: "POST",
       body: JSON.stringify({ interests }),
-    }),
+    });
+  },
 };
 
-// ─── Dashboard Module ───────────────────────────────────────────────
+// ─── Dashboard (NEW) ────────────────────────────────────────────────
 
 export const dashboardAPI = {
-  getDashboard: () => fetchWithAuth(`${API_URL}/dashboard/`),
+  getDashboard: async () => fetchAPI("/dashboard/"),
 };
 
-// ─── Matches Module ─────────────────────────────────────────────────
+// ─── Matches (UPDATED) ──────────────────────────────────────────────
 
 export interface Match {
   id: string;
@@ -154,36 +186,116 @@ export interface Match {
 }
 
 export const matchesAPI = {
-  getLive: () => fetchWithAuth(`${API_URL}/matches/live/`),
-  getUpcoming: () => fetchWithAuth(`${API_URL}/matches/upcoming/`),
-  getPast: () => fetchWithAuth(`${API_URL}/matches/past/`),
-  getDetails: (id: string) => fetchWithAuth(`${API_URL}/matches/${id}/`),
+  getLive: async () => fetchAPI("/matches/live/"),
+  getUpcoming: async () => fetchAPI("/matches/upcoming/"),
+  getPast: async () => fetchAPI("/matches/past/"),
+  getDetails: async (id: string) => fetchAPI(`/matches/${id}/`),
+
+  // Legacy aliases
+  getLiveMatches: async () => fetchAPI("/matches/live/"),
+  getPreviousMatches: async (params?: { sport?: string; page?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.sport) queryParams.append("sport", params.sport);
+    if (params?.page) queryParams.append("page", String(params.page));
+    return fetchAPI(`/matches/previous/?${queryParams.toString()}`);
+  },
+  getMatchDetails: async (id: string) => fetchAPI(`/matches/${id}/`),
 };
 
-// ─── Teams Module ───────────────────────────────────────────────────
+// ─── Teams (NEW) ────────────────────────────────────────────────────
 
 export const teamsAPI = {
-  getTeams: () => fetchWithAuth(`${API_URL}/teams/`),
-  getTeam: (id: string) => fetchWithAuth(`${API_URL}/teams/${id}/`),
+  getTeams: async () => fetchAPI("/teams/"),
+  getTeam: async (id: string) => fetchAPI(`/teams/${id}/`),
 };
 
-// ─── Streams Module ─────────────────────────────────────────────────
+// ─── Streams ────────────────────────────────────────────────────────
 
 export const streamsAPI = {
-  getStreams: () => fetchWithAuth(`${API_URL}/streams/`),
-  getStream: (id: string) => fetchWithAuth(`${API_URL}/streams/${id}/`),
-  getFeatured: () => fetchWithAuth(`${API_URL}/streams/featured/`),
-  getLive: () => fetchWithAuth(`${API_URL}/streams/?status=live`),
-  recordView: (id: string) =>
-    fetchWithAuth(`${API_URL}/streams/${id}/view/`, { method: "POST" }),
+  getStreams: async (params?: { status?: string; sport?: string; page?: number; limit?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append("status", params.status);
+    if (params?.sport) queryParams.append("sport", params.sport);
+    if (params?.page) queryParams.append("page", String(params.page));
+    if (params?.limit) queryParams.append("limit", String(params.limit));
+    return fetchAPI(`/streams/?${queryParams.toString()}`);
+  },
+  getStream: async (id: string) => fetchAPI(`/streams/${id}/`),
+  getFeatured: async () => fetchAPI("/streams/featured/"),
+  getLive: async () => fetchAPI("/streams/?status=live"),
+  recordView: async (id: string, duration: number, quality: string) => {
+    return fetchAPI(`/streams/${id}/view/`, {
+      method: "POST",
+      body: JSON.stringify({ duration, quality }),
+    });
+  },
 };
 
-// ─── Sports Module ──────────────────────────────────────────────────
+// ─── Schedule ───────────────────────────────────────────────────────
+
+export const scheduleAPI = {
+  getSchedule: async (params?: { date?: string; sport?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.date) queryParams.append("date", params.date);
+    if (params?.sport) queryParams.append("sport", params.sport);
+    return fetchAPI(`/schedule/?${queryParams.toString()}`);
+  },
+  setReminder: async (eventId: string, notifyBefore: number = 15) => {
+    return fetchAPI(`/schedule/${eventId}/reminder/`, {
+      method: "POST",
+      body: JSON.stringify({ notify_before: notifyBefore }),
+    });
+  },
+  removeReminder: async (eventId: string) => {
+    return fetchAPI(`/schedule/${eventId}/reminder/`, { method: "DELETE" });
+  },
+};
+
+// ─── Highlights (RESTORED) ──────────────────────────────────────────
+
+export const highlightsAPI = {
+  getHighlights: async (params?: { sport?: string; type?: string; page?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.sport) queryParams.append("sport", params.sport);
+    if (params?.type) queryParams.append("type", params.type);
+    if (params?.page) queryParams.append("page", String(params.page));
+    return fetchAPI(`/highlights/?${queryParams.toString()}`);
+  },
+  getHighlight: async (id: string) => fetchAPI(`/highlights/${id}/`),
+};
+
+// ─── News ───────────────────────────────────────────────────────────
+
+export const newsAPI = {
+  getNews: async (params?: { sport?: string; category?: string; page?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.sport) queryParams.append("sport", params.sport);
+    if (params?.category) queryParams.append("category", params.category);
+    if (params?.page) queryParams.append("page", String(params.page));
+    return fetchAPI(`/news/?${queryParams.toString()}`);
+  },
+  getArticle: async (slug: string) => fetchAPI(`/news/${slug}/`),
+};
+
+// ─── Sports ─────────────────────────────────────────────────────────
 
 export const sportsAPI = {
-  getSports: () => fetchWithAuth(`${API_URL}/sports/`),
+  getSports: async () => fetchAPI("/sports/"),
+  getLeagues: async (sportSlug: string) => fetchAPI(`/sports/${sportSlug}/leagues/`),
+  getTeams: async (leagueSlug: string) => fetchAPI(`/leagues/${leagueSlug}/teams/`),
 };
 
-// ─── Legacy export ──────────────────────────────────────────────────
+// ─── Default export ─────────────────────────────────────────────────
 
-export { fetchWithAuth };
+export default {
+  auth: authAPI,
+  user: userAPI,
+  streams: streamsAPI,
+  schedule: scheduleAPI,
+  highlights: highlightsAPI,
+  news: newsAPI,
+  sports: sportsAPI,
+  matches: matchesAPI,
+  teams: teamsAPI,
+  dashboard: dashboardAPI,
+};
