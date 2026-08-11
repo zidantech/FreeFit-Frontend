@@ -122,7 +122,7 @@ export default function HomeDashboard() {
       <section className="px-4 sm:px-6 py-4">
         <div className="max-w-6xl mx-auto">
           <SportSelector
-            sports={sports.map((s) => ({ id: s, name: s, slug: s.toLowerCase() }))}
+            sports={sports.map((s) => ({ id: s, name: s, slug: s.toLowerCase(), icon: "Trophy" }))}
             selected={[selectedSport.toLowerCase()]}
             onChange={(sel) => setSelectedSport(sel[0] === "all" ? "All" : sel[0])}
             multiSelect={false}
