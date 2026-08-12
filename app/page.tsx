@@ -12,7 +12,7 @@ import {
 import { useState, useEffect, useCallback } from "react";
 import Navbar from "@/components/Navbar";
 import VideoPlayer from "@/components/VideoPlayer";
-import { authAPI, dashboardAPI } from "@/lib/api";
+import { authAPI, streamsAPI } from "@/lib/api";
 
 // ─── Demo Data ───────────────────────────────────────────────────────
 
@@ -24,36 +24,6 @@ const HERO_IMAGES = [
   "https://images.unsplash.com/photo-1515703407324-5f753afd8be8?w=1920&q=80",
 ];
 
-const videoHighlights = [
-  {
-    id: "1",
-    title: "Premier League Best Goals - Matchweek 12",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    poster: "https://images.unsplash.com/photo-1629977007371-0ba395424741?w=800&q=80",
-    sport: "Football",
-    duration: "3:45",
-    views: "1.2M",
-  },
-  {
-    id: "2",
-    title: "F1 Monaco GP 2026 - Race Highlights",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-    poster: "https://images.unsplash.com/photo-1728116693268-125c5d6ad9e2?w=800&q=80",
-    sport: "Formula 1",
-    duration: "5:20",
-    views: "890K",
-  },
-  {
-    id: "3",
-    title: "Champions League Final - Extended Highlights",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-    poster: "https://images.unsplash.com/photo-1577223625816-7546f13df25d?w=800&q=80",
-    sport: "Football",
-    duration: "8:15",
-    views: "2.5M",
-  },
-];
-
 const sportsImages = [
   { src: "https://images.unsplash.com/photo-1728116693268-125c5d6ad9e2?w=800&q=80", alt: "Formula 1 Racing", span: "col-span-2 row-span-1" },
   { src: "https://images.unsplash.com/photo-1629977007371-0ba395424741?w=800&q=80", alt: "Football Action", span: "col-span-1 row-span-1" },
@@ -62,7 +32,112 @@ const sportsImages = [
   { src: "https://images.unsplash.com/photo-1651179602825-a5cb093cd467?w=800&q=80", alt: "Baseball Game", span: "col-span-2 row-span-1" },
   { src: "https://plus.unsplash.com/premium_photo-1676634832558-6654a134e920?w=800&q=80", alt: "Basketball Game", span: "col-span-1 row-span-1" },
   { src: "https://images.unsplash.com/flagged/photo-1576972405668-2d020a01cbfa?w=800&q=80", alt: "Tennis Player", span: "col-span-1 row-span-1" },
-  { src: "https://plus.unsplash.com/premium_photo-1664910059954-9fba97bc5d6e?w=800&q=80", alt: "Boxing Training", span: "col-span-1 row-span-1" },
+  { src: "https://plus.unsplash.com/premium_photo-1664910059954-9fba97bc5d6e?w=800&q=80", alt: "Boxing Training", span: "col-span-1 row-span-1" }
+];
+
+const videoHighlights = [
+  {
+    id: "1",
+    title: "Premier League Best Goals - Matchweek 12",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    poster: "https://images.unsplash.com/photo-1629977007371-0ba395424741?w=800&q=80",
+    sport: "Football",
+    duration: "3:45",
+    views: "1.2M"
+  },
+  {
+    id: "2",
+    title: "F1 Monaco GP 2026 - Race Highlights",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+    poster: "https://images.unsplash.com/photo-1728116693268-125c5d6ad9e2?w=800&q=80",
+    sport: "Formula 1",
+    duration: "5:20",
+    views: "890K"
+  },
+  {
+    id: "3",
+    title: "Champions League Final - Extended Highlights",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+    poster: "https://images.unsplash.com/photo-1577223625816-7546f13df25d?w=800&q=80",
+    sport: "Football",
+    duration: "8:15",
+    views: "2.5M"
+  }
+];
+
+const liveSports = [
+  {
+    id: "1",
+    sport: "Football",
+    league: "UEFA Champions Leagues",
+    team1: "Arsenal",
+    team2: "PSG",
+    score1: 2,
+    score2: 1,
+    image: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&q=80",
+    isLive: true,
+    span: "col-span-1 row-span-2",
+  },
+  {
+    id: "2",
+    sport: "Baseball",
+    image: "https://images.unsplash.com/photo-1544298621-6e7a3f47e4a5?w=800&q=80",
+    isLive: false,
+    span: "col-span-1 row-span-1",
+  },
+  {
+    id: "3",
+    sport: "Basketball",
+    image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80",
+    isLive: false,
+    span: "col-span-1 row-span-2",
+  },
+  {
+    id: "4",
+    sport: "Formula 1",
+    image: "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800&q=80",
+    isLive: false,
+    span: "col-span-1 row-span-1",
+  },
+];
+
+const comingUpMatches = [
+  {
+    id: "1",
+    sport: "Football",
+    league: "Premier League",
+    team1: "Chelsea",
+    team2: "Arsenal",
+    time: "Today",
+    timeGMT: "20.00 GMT",
+  },
+  {
+    id: "2",
+    sport: "Basketball",
+    league: "NBA Playoff",
+    team1: "Spurs",
+    team2: "Knicks",
+    time: "Tomorrow",
+    timeGMT: "02.00 GMT",
+  },
+  {
+    id: "3",
+    sport: "Baseball",
+    league: "MLB",
+    team1: "Yankees",
+    team2: "Red Sox",
+    time: "Sat, 14 Jun",
+    timeGMT: "18.30 GMT",
+  },
+  {
+    id: "4",
+    sport: "Volleyball",
+    league: "Women Nations League",
+    team1: "Canada",
+    team2: "Japan",
+    time: "Sun, 15 Jun",
+    timeGMT: "14.00 GMT",
+  },
 ];
 
 const allSportsCategories = [
@@ -75,79 +150,26 @@ const allSportsCategories = [
   { name: "Baseball", image: "https://images.unsplash.com/photo-1544298621-6e7a3f47e4a5?w=400&q=80" },
 ];
 
-// ─── Types ─────────────────────────────────────────────────────────
-
-interface Match {
-  id: string;
-  team1: string;
-  team2: string;
-  team1_logo?: string;
-  team2_logo?: string;
-  score1?: number;
-  score2?: number;
-  league: string;
-  sport: string;
-  start_time?: string;
-  stream_url?: string;
-  is_live: boolean;
-  is_past: boolean;
-}
-
-// ─── Helper: Normalize Backend Match ───────────────────────────────
-
-function normalizeMatch(m: any): Match {
-  return {
-    id: m.id,
-    team1: m.team1 || m.home_team?.name || "Home",
-    team2: m.team2 || m.away_team?.name || "Away",
-    team1_logo: m.team1_logo || m.home_team?.logo,
-    team2_logo: m.team2_logo || m.away_team?.logo,
-    score1: m.score1 ?? m.home_score,
-    score2: m.score2 ?? m.away_score,
-    league: m.league || "League",
-    sport: m.sport || "Sport",
-    start_time: m.start_time,
-    stream_url: m.stream_url,
-    is_live: m.is_live,
-    is_past: m.is_past,
-  };
-}
-
-function getMatchStatus(m: Match): "live" | "upcoming" | "past" {
-  if (m.is_live) return "live";
-  if (m.is_past) return "past";
-  return "upcoming";
-}
-
 // ─── Component ─────────────────────────────────────────────────────
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [featuredStreams, setFeaturedStreams] = useState<any[]>([]);
   const [activeVideo, setActiveVideo] = useState(0);
   const [currentHero, setCurrentHero] = useState(0);
-
-  // Dashboard data from backend
-  const [liveMatches, setLiveMatches] = useState<Match[]>([]);
-  const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
-  const [pastMatches, setPastMatches] = useState<Match[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setIsAuthenticated(authAPI.isAuthenticated());
 
-    const fetchDashboard = async () => {
+    const fetchStreams = async () => {
       try {
-        const data = await dashboardAPI.getDashboard();
-        setLiveMatches((data.live_matches || []).map(normalizeMatch));
-        setUpcomingMatches((data.upcoming_matches || []).map(normalizeMatch));
-        setPastMatches((data.past_matches || []).map(normalizeMatch));
+        const data = await streamsAPI.getFeatured();
+        if (data?.data) setFeaturedStreams(data.data);
       } catch (err) {
-        console.log("Dashboard API unavailable, using empty state");
-      } finally {
-        setLoading(false);
+        console.log("Featured streams not available yet");
       }
     };
-    fetchDashboard();
+    fetchStreams();
   }, []);
 
   // Auto-rotate hero images every 5 seconds
@@ -166,26 +188,16 @@ export default function Home() {
     setCurrentHero((prev) => (prev - 1 + HERO_IMAGES.length) % HERO_IMAGES.length);
   }, []);
 
-  const formatTime = (iso?: string) => {
-    if (!iso) return "";
-    const d = new Date(iso);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
-  const formatDate = (iso?: string) => {
-    if (!iso) return "";
-    const d = new Date(iso);
-    return d.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
-  };
-
   return (
     <main className="min-h-screen bg-[#0a0e27]">
       <Navbar />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 1: WATCH NOW (Hero Carousel)
+          SECTION 1: WATCH NOW (Hero)
+          mt-16/mt-20 pushes it BELOW the fixed navbar — NO OVERLAP
           ═══════════════════════════════════════════════════════════════ */}
       <section className="relative h-[500px] sm:h-[600px] lg:h-[700px] overflow-hidden mt-16 sm:mt-20">
+        {/* Background Images */}
         {HERO_IMAGES.map((img, index) => (
           <div
             key={img}
@@ -200,9 +212,10 @@ export default function Home() {
           </div>
         ))}
 
+        {/* Dark Overlay */}
         <div className="absolute inset-0 bg-[#0a0e27]/70" />
 
-        {/* Arrows */}
+        {/* Navigation Arrows */}
         <button
           onClick={prevHero}
           className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white transition-all"
@@ -216,7 +229,7 @@ export default function Home() {
           <ChevronRight className="w-6 h-6" />
         </button>
 
-        {/* Dots */}
+        {/* Dots Indicator */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
           {HERO_IMAGES.map((_, index) => (
             <button
@@ -235,7 +248,10 @@ export default function Home() {
         <div className="relative z-10 h-full flex items-center justify-center px-4 sm:px-6">
           <div className="max-w-4xl mx-auto text-center">
             <div className="w-14 h-14 sm:w-16 sm:h-16 bg-cyan-400 rounded-lg flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg shadow-cyan-400/30">
-              <Play className="w-7 h-7 sm:w-8 sm:h-8 text-[#0a0e27] ml-1" fill="currentColor" />
+              <Play
+                className="w-7 h-7 sm:w-8 sm:h-8 text-[#0a0e27] ml-1"
+                fill="currentColor"
+              />
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4 uppercase tracking-wider">
               Watch Now
@@ -274,7 +290,9 @@ export default function Home() {
                 <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                 Live Now
               </span>
-              <h2 className="text-xl sm:text-2xl font-bold text-white">Matches Streaming Now</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
+                Matches Streaming Now
+              </h2>
             </div>
             <Link
               href="/home"
@@ -322,8 +340,12 @@ export default function Home() {
                     {video.title}
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-cyan-400 text-[10px] sm:text-xs">{video.sport}</span>
-                    <span className="text-gray-500 text-[10px] sm:text-xs">{video.views} views</span>
+                    <span className="text-cyan-400 text-[10px] sm:text-xs">
+                      {video.sport}
+                    </span>
+                    <span className="text-gray-500 text-[10px] sm:text-xs">
+                      {video.views} views
+                    </span>
                   </div>
                 </div>
               </button>
@@ -333,7 +355,7 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 3: LIVE SPORTS (from Dashboard API)
+          SECTION 3: LIVE SPORTS GRID
           ═══════════════════════════════════════════════════════════════ */}
       <section className="px-4 sm:px-6 py-8 sm:py-12">
         <div className="max-w-6xl mx-auto">
@@ -355,77 +377,59 @@ export default function Home() {
             Live Sports
           </h2>
 
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-48 bg-white/5 rounded-xl animate-pulse" />
-              ))}
-            </div>
-          ) : liveMatches.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No live matches right now.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {liveMatches.map((match) => (
-                <Link
-                  key={match.id}
-                  href={`/matches/${match.id}`}
-                  className="bg-[#0f1535] border border-white/10 rounded-xl overflow-hidden hover:border-cyan-400/30 transition-all group"
-                >
-                  <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-                    <span className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider">
-                      {match.league}
-                    </span>
-                    <span className="flex items-center gap-1.5 px-2 py-0.5 bg-red-500/20 rounded-full">
-                      <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                      <span className="text-[10px] text-red-400 font-bold uppercase">Live</span>
-                    </span>
-                  </div>
-                  <div className="px-4 py-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col items-center gap-2 flex-1">
-                        {match.team1_logo ? (
-                          <img src={match.team1_logo} alt={match.team1} className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
-                        ) : (
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-sm font-bold text-gray-300">
-                            {match.team1.slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                        <span className="text-white text-xs sm:text-sm font-medium text-center">{match.team1}</span>
-                      </div>
-                      <div className="px-3 sm:px-6 text-center">
-                        <span className="text-2xl sm:text-3xl font-bold text-cyan-400 font-mono">
-                          {match.score1 ?? 0} - {match.score2 ?? 0}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-center gap-2 flex-1">
-                        {match.team2_logo ? (
-                          <img src={match.team2_logo} alt={match.team2} className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
-                        ) : (
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-sm font-bold text-gray-300">
-                            {match.team2.slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                        <span className="text-white text-xs sm:text-sm font-medium text-center">{match.team2}</span>
-                      </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 auto-rows-[160px] sm:auto-rows-[200px]">
+            {liveSports.map((sport) => (
+              <div
+                key={sport.id}
+                className={`${sport.span} relative rounded-xl overflow-hidden group cursor-pointer`}
+              >
+                <img
+                  src={sport.image}
+                  alt={sport.sport}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-[#0a0e27]/30 group-hover:bg-[#0a0e27]/10 transition-colors" />
+
+                {sport.isLive && (
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold uppercase rounded">
+                        Live Now
+                      </span>
                     </div>
-                  </div>
-                  <div className="px-4 pb-4">
-                    <div className="flex items-center justify-center gap-2 w-full py-2.5 bg-cyan-400 hover:bg-cyan-300 text-[#0a0e27] rounded-lg font-semibold text-sm transition-colors">
-                      <Play className="w-4 h-4" fill="currentColor" />
-                      Watch Live
+                    <div className="flex items-center gap-2 text-white">
+                      <span className="font-bold text-lg sm:text-xl">
+                        {sport.team1}
+                      </span>
+                      <span className="text-cyan-400 font-bold text-xl sm:text-2xl">
+                        {sport.score1}-{sport.score2}
+                      </span>
+                      <span className="font-bold text-lg sm:text-xl">
+                        {sport.team2}
+                      </span>
                     </div>
+                    <p className="text-gray-300 text-xs mt-0.5">
+                      {sport.league}
+                    </p>
                   </div>
-                </Link>
-              ))}
-            </div>
-          )}
+                )}
+
+                {!sport.isLive && (
+                  <div className="absolute bottom-3 left-3">
+                    <span className="text-white font-semibold text-sm">
+                      {sport.sport}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 4: COMING UP (from Dashboard API)
+          SECTION 4: COMING UP
           ═══════════════════════════════════════════════════════════════ */}
       <section className="py-12 sm:py-16 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
@@ -439,54 +443,44 @@ export default function Home() {
               </h2>
             </div>
             <Link
-              href="/home"
+              href="/home#schedule"
               className="text-white text-sm hover:text-cyan-400 transition-colors uppercase tracking-wider"
             >
               Full Schedule
             </Link>
           </div>
 
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-56 bg-white/5 rounded-xl animate-pulse" />
-              ))}
-            </div>
-          ) : upcomingMatches.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No upcoming matches scheduled.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {upcomingMatches.map((match) => (
-                <div
-                  key={match.id}
-                  className="bg-[#0f1535] border border-cyan-500/20 rounded-xl p-4 sm:p-5 hover:border-cyan-400/50 transition-all group"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-white text-xs font-medium uppercase">{match.sport}</p>
-                      <p className="text-gray-500 text-[10px]">{match.league}</p>
-                    </div>
-                    <button className="p-1.5 hover:bg-white/10 rounded-full transition-colors">
-                      <Bell className="w-4 h-4 text-gray-400 hover:text-cyan-400" />
-                    </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {comingUpMatches.map((match) => (
+              <div
+                key={match.id}
+                className="bg-[#0f1535] border border-cyan-500/20 rounded-xl p-4 sm:p-5 hover:border-cyan-400/50 transition-all group"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-white text-xs font-medium uppercase">
+                      {match.sport}
+                    </p>
+                    <p className="text-gray-500 text-[10px]">{match.league}</p>
                   </div>
-
-                  <div className="text-center py-3">
-                    <p className="text-white font-bold text-lg">{match.team1}</p>
-                    <p className="text-cyan-400 font-bold text-xl my-1">VS</p>
-                    <p className="text-white font-bold text-lg">{match.team2}</p>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-white/10">
-                    <p className="text-gray-400 text-xs">{formatDate(match.start_time)}</p>
-                    <p className="text-gray-500 text-xs">{formatTime(match.start_time)} GMT</p>
-                  </div>
+                  <button className="p-1.5 hover:bg-white/10 rounded-full transition-colors">
+                    <Bell className="w-4 h-4 text-gray-400 hover:text-cyan-400" />
+                  </button>
                 </div>
-              ))}
-            </div>
-          )}
+
+                <div className="text-center py-3">
+                  <p className="text-white font-bold text-lg">{match.team1}</p>
+                  <p className="text-cyan-400 font-bold text-xl my-1">VS</p>
+                  <p className="text-white font-bold text-lg">{match.team2}</p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-white/10">
+                  <p className="text-gray-400 text-xs">{match.time}</p>
+                  <p className="text-gray-500 text-xs">{match.timeGMT}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -516,7 +510,9 @@ export default function Home() {
                 />
                 <div className="absolute inset-0 bg-[#0a0e27]/50 group-hover:bg-[#0a0e27]/30 transition-colors" />
                 <div className="absolute bottom-2 left-2 right-2">
-                  <span className="text-white font-bold text-sm sm:text-base">{sport.name}</span>
+                  <span className="text-white font-bold text-sm sm:text-base">
+                    {sport.name}
+                  </span>
                 </div>
               </div>
             ))}
@@ -538,8 +534,12 @@ export default function Home() {
                 <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
               </div>
               <div>
-                <h3 className="text-white font-semibold text-sm sm:text-base">Live Matches</h3>
-                <p className="text-gray-400 text-xs sm:text-sm mt-0.5">Watch ongoing games now</p>
+                <h3 className="text-white font-semibold text-sm sm:text-base">
+                  Live Matches
+                </h3>
+                <p className="text-gray-400 text-xs sm:text-sm mt-0.5">
+                  Watch ongoing games now
+                </p>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-500 ml-auto group-hover:text-cyan-400 transition-colors shrink-0" />
             </Link>
@@ -552,8 +552,12 @@ export default function Home() {
                 <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
               </div>
               <div>
-                <h3 className="text-white font-semibold text-sm sm:text-base">Schedule</h3>
-                <p className="text-gray-400 text-xs sm:text-sm mt-0.5">Upcoming matches</p>
+                <h3 className="text-white font-semibold text-sm sm:text-base">
+                  Schedule
+                </h3>
+                <p className="text-gray-400 text-xs sm:text-sm mt-0.5">
+                  Upcoming matches
+                </p>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-500 ml-auto group-hover:text-cyan-400 transition-colors shrink-0" />
             </Link>
@@ -566,8 +570,12 @@ export default function Home() {
                 <Newspaper className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
               </div>
               <div>
-                <h3 className="text-white font-semibold text-sm sm:text-base">Highlights</h3>
-                <p className="text-gray-400 text-xs sm:text-sm mt-0.5">Best moments replay</p>
+                <h3 className="text-white font-semibold text-sm sm:text-base">
+                  Highlights
+                </h3>
+                <p className="text-gray-400 text-xs sm:text-sm mt-0.5">
+                  Best moments replay
+                </p>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-500 ml-auto group-hover:text-cyan-400 transition-colors shrink-0" />
             </Link>
@@ -597,7 +605,9 @@ export default function Home() {
                 />
                 <div className="absolute inset-0 bg-[#0a0e27]/40 group-hover:bg-[#0a0e27]/20 transition-colors" />
                 <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3">
-                  <span className="text-white font-semibold text-xs sm:text-sm">{image.alt}</span>
+                  <span className="text-white font-semibold text-xs sm:text-sm">
+                    {image.alt}
+                  </span>
                 </div>
               </div>
             ))}

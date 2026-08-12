@@ -1,8 +1,4 @@
-// lib/api.ts
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://free-fit-backend.onrender.com/api";
-
-// ─── Token Helpers ──────────────────────────────────────────────────
 
 const getAccessToken = () => {
   if (typeof window !== "undefined") {
@@ -33,26 +29,6 @@ const clearTokens = () => {
     localStorage.removeItem("interests");
   }
 };
-
-// ─── Response Handler ───────────────────────────────────────────────
-
-async function handleResponse(response: Response) {
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    const msg =
-      error.non_field_errors?.[0] ||
-      error.detail ||
-      error.message ||
-      Object.entries(error)
-        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v[0] : v}`)
-        .join(" | ") ||
-      `HTTP ${response.status}`;
-    throw new Error(msg);
-  }
-  return response.json();
-}
-
-// ─── Core Fetch ─────────────────────────────────────────────────────
 
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -85,6 +61,14 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   }
 }
 
+async function handleResponse(response: Response) {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || error.detail || `HTTP ${response.status}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
 async function refreshAccessToken() {
   try {
     const refresh = getRefreshToken();
@@ -106,8 +90,6 @@ async function refreshAccessToken() {
     return false;
   }
 }
-
-// ─── Auth ───────────────────────────────────────────────────────────
 
 export const authAPI = {
   register: async (email: string, password: string, confirmPassword: string) => {
@@ -143,8 +125,6 @@ export const authAPI = {
   }),
 };
 
-// ─── User ───────────────────────────────────────────────────────────
-
 export const userAPI = {
   getProfile: async () => fetchAPI("/users/me/"),
   updateProfile: async (profileData: { name?: string; avatar?: string; interests?: string[] }) => {
@@ -160,56 +140,6 @@ export const userAPI = {
     });
   },
 };
-
-// ─── Dashboard (NEW) ────────────────────────────────────────────────
-
-export const dashboardAPI = {
-  getDashboard: async () => fetchAPI("/dashboard/"),
-};
-
-// ─── Matches (UPDATED) ──────────────────────────────────────────────
-
-export interface Match {
-  id: string;
-  team1: string;
-  team2: string;
-  team1_logo?: string;
-  team2_logo?: string;
-  score1?: number;
-  score2?: number;
-  league: string;
-  sport: string;
-  start_time?: string;
-  stream_url?: string;
-  is_live: boolean;
-  is_past: boolean;
-}
-
-export const matchesAPI = {
-  getLive: async () => fetchAPI("/matches/live/"),
-  getUpcoming: async () => fetchAPI("/matches/upcoming/"),
-  getPast: async () => fetchAPI("/matches/past/"),
-  getDetails: async (id: string) => fetchAPI(`/matches/${id}/`),
-
-  // Legacy aliases
-  getLiveMatches: async () => fetchAPI("/matches/live/"),
-  getPreviousMatches: async (params?: { sport?: string; page?: number }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.sport) queryParams.append("sport", params.sport);
-    if (params?.page) queryParams.append("page", String(params.page));
-    return fetchAPI(`/matches/previous/?${queryParams.toString()}`);
-  },
-  getMatchDetails: async (id: string) => fetchAPI(`/matches/${id}/`),
-};
-
-// ─── Teams (NEW) ────────────────────────────────────────────────────
-
-export const teamsAPI = {
-  getTeams: async () => fetchAPI("/teams/"),
-  getTeam: async (id: string) => fetchAPI(`/teams/${id}/`),
-};
-
-// ─── Streams ────────────────────────────────────────────────────────
 
 export const streamsAPI = {
   getStreams: async (params?: { status?: string; sport?: string; page?: number; limit?: number }) => {
@@ -231,8 +161,6 @@ export const streamsAPI = {
   },
 };
 
-// ─── Schedule ───────────────────────────────────────────────────────
-
 export const scheduleAPI = {
   getSchedule: async (params?: { date?: string; sport?: string }) => {
     const queryParams = new URLSearchParams();
@@ -251,8 +179,6 @@ export const scheduleAPI = {
   },
 };
 
-// ─── Highlights (RESTORED) ──────────────────────────────────────────
-
 export const highlightsAPI = {
   getHighlights: async (params?: { sport?: string; type?: string; page?: number }) => {
     const queryParams = new URLSearchParams();
@@ -263,8 +189,6 @@ export const highlightsAPI = {
   },
   getHighlight: async (id: string) => fetchAPI(`/highlights/${id}/`),
 };
-
-// ─── News ───────────────────────────────────────────────────────────
 
 export const newsAPI = {
   getNews: async (params?: { sport?: string; category?: string; page?: number }) => {
@@ -277,15 +201,22 @@ export const newsAPI = {
   getArticle: async (slug: string) => fetchAPI(`/news/${slug}/`),
 };
 
-// ─── Sports ─────────────────────────────────────────────────────────
-
 export const sportsAPI = {
   getSports: async () => fetchAPI("/sports/"),
   getLeagues: async (sportSlug: string) => fetchAPI(`/sports/${sportSlug}/leagues/`),
   getTeams: async (leagueSlug: string) => fetchAPI(`/leagues/${leagueSlug}/teams/`),
 };
 
-// ─── Default export ─────────────────────────────────────────────────
+export const matchesAPI = {
+  getLiveMatches: async () => fetchAPI("/matches/live/"),
+  getPreviousMatches: async (params?: { sport?: string; page?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.sport) queryParams.append("sport", params.sport);
+    if (params?.page) queryParams.append("page", String(params.page));
+    return fetchAPI(`/matches/previous/?${queryParams.toString()}`);
+  },
+  getMatchDetails: async (id: string) => fetchAPI(`/matches/${id}/`),
+};
 
 export default {
   auth: authAPI,
@@ -296,6 +227,4 @@ export default {
   news: newsAPI,
   sports: sportsAPI,
   matches: matchesAPI,
-  teams: teamsAPI,
-  dashboard: dashboardAPI,
 };
