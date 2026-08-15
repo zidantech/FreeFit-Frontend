@@ -7,90 +7,33 @@ import Navbar from "@/components/Navbar";
 import MatchCard from "@/components/MatchCard";
 import { LayoutGrid, Play, Loader2, Trophy, Sparkles } from "lucide-react";
 
+import { SportIcon } from "@/lib/sportsIcons";
+
 interface Sport {
   id: string;
   name: string;
   slug: string;
-  icon: string;
+  icon?: string;
 }
 
-const allSports: Sport[] = [
-  { id: "1", name: "Football", slug: "football", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099672.png" },
-  { id: "2", name: "Tennis", slug: "tennis", icon: "https://cdn-icons-png.flaticon.com/128/2151/2151115.png" },
-  { id: "3", name: "Basketball", slug: "basketball", icon: "https://cdn-icons-png.flaticon.com/128/317/317709.png" },
-  { id: "4", name: "Cricket", slug: "cricket", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099683.png" },
-  { id: "5", name: "Hockey", slug: "hockey", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099692.png" },
-  { id: "6", name: "Golf", slug: "golf", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099710.png" },
-  { id: "7", name: "Baseball", slug: "baseball", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099695.png" },
-  { id: "8", name: "Formula 1", slug: "formula-1", icon: "https://cdn-icons-png.flaticon.com/128/2964/2964514.png" },
-  { id: "9", name: "Boxing", slug: "boxing", icon: "https://cdn-icons-png.flaticon.com/128/2548/2548535.png" },
-  { id: "10", name: "Rugby", slug: "rugby", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099702.png" },
+const defaultSports: Sport[] = [
+  { id: "1", name: "Football", slug: "football" },
+  { id: "2", name: "Tennis", slug: "tennis" },
+  { id: "3", name: "Basketball", slug: "basketball" },
+  { id: "4", name: "Cricket", slug: "cricket" },
+  { id: "5", name: "Hockey", slug: "hockey" },
+  { id: "6", name: "Golf", slug: "golf" },
+  { id: "7", name: "Baseball", slug: "baseball" },
+  { id: "8", name: "Formula 1", slug: "formula-1" },
+  { id: "9", name: "Boxing", slug: "boxing" },
+  { id: "10", name: "Rugby", slug: "rugby" },
+  { id: "11", name: "Wrestling", slug: "wrestling" },
+  { id: "12", name: "Athletics", slug: "athletics" },
 ];
-
-const demoMatchesBySport: Record<string, any[]> = {
-  football: [
-    {
-      id: "cf1",
-      teams: [
-        { id: "ct1", name: "Man City", logo: "https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg", score: 3 },
-        { id: "ct2", name: "Arsenal", logo: "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg", score: 1 }
-      ],
-      status: "live" as const,
-      league: "Premier League",
-      streamUrl: "#"
-    },
-    {
-      id: "cf2",
-      teams: [
-        { id: "ct3", name: "Inter", logo: "https://upload.wikimedia.org/wikipedia/commons/0/05/FC_Internazionale_Milano_2021.svg", score: 2 },
-        { id: "ct4", name: "AC Milan", logo: "https://upload.wikimedia.org/wikipedia/commons/d/d0/AC_Milan_logo.svg", score: 0 }
-      ],
-      status: "ended" as const,
-      league: "Serie A"
-    },
-  ],
-  tennis: [
-    {
-      id: "ct1",
-      teams: [
-        { id: "ctt1", name: "Djokovic", logo: "https://via.placeholder.com/56?text=ND", score: 6 },
-        { id: "ctt2", name: "Alcaraz", logo: "https://via.placeholder.com/56?text=CA", score: 4 }
-      ],
-      status: "live" as const,
-      league: "Wimbledon",
-      streamUrl: "#"
-    },
-  ],
-  basketball: [
-    {
-      id: "cb1",
-      teams: [
-        { id: "cbt1", name: "Lakers", logo: "https://via.placeholder.com/56?text=LAL", score: 102 },
-        { id: "cbt2", name: "Warriors", logo: "https://via.placeholder.com/56?text=GSW", score: 98 }
-      ],
-      status: "live" as const,
-      league: "NBA",
-      streamUrl: "#"
-    },
-  ],
-};
-
-const demoHighlightsBySport: Record<string, any[]> = {
-  football: [
-    { id: "ch1", title: "Premier League Best Goals", thumbnail: "https://images.unsplash.com/photo-1629977007371-0ba395424741?w=800&q=80", duration: "3:45", views: "1.2M" },
-    { id: "ch2", title: "Champions League Final Highlights", thumbnail: "https://images.unsplash.com/photo-1577223625816-7546f13df25d?w=800&q=80", duration: "8:15", views: "2.5M" },
-  ],
-  tennis: [
-    { id: "cht1", title: "Wimbledon Top Rallies", thumbnail: "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&q=80", duration: "5:30", views: "890K" },
-  ],
-  basketball: [
-    { id: "chb1", title: "NBA Top Dunks", thumbnail: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80", duration: "4:20", views: "2.1M" },
-  ],
-};
 
 export default function CategoriesPage() {
   const router = useRouter();
-  const [sports, setSports] = useState<Sport[]>(allSports);
+  const [sports, setSports] = useState<Sport[]>(defaultSports);
   const [selectedSport, setSelectedSport] = useState<string>("football");
   const [matches, setMatches] = useState<any[]>([]);
   const [highlights, setHighlights] = useState<any[]>([]);
@@ -106,11 +49,12 @@ export default function CategoriesPage() {
     const fetchSports = async () => {
       try {
         const data = await sportsAPI.getSports();
-        if (data?.data?.length > 0) {
-          setSports(data.data);
+        const items = data?.data || data;
+        if (Array.isArray(items) && items.length > 0) {
+          setSports(items);
         }
       } catch (err) {
-        console.log("Using default sports");
+        console.error("Using default sports categories:", err);
       }
     };
 
@@ -124,25 +68,23 @@ export default function CategoriesPage() {
 
     try {
       const matchesData = await matchesAPI.getLiveMatches();
-      if (matchesData?.data?.length > 0) {
-        const filtered = matchesData.data.filter((m: any) =>
-          m.sport?.slug === sportSlug || m.teams?.some((t: any) => t.sport?.slug === sportSlug)
+      const matchItems = matchesData?.data || matchesData?.live_matches || (Array.isArray(matchesData) ? matchesData : []);
+      if (Array.isArray(matchItems) && matchItems.length > 0) {
+        const filtered = matchItems.filter((m: any) =>
+          m.sport?.slug === sportSlug || m.sport?.name?.toLowerCase() === sportSlug || m.teams?.some((t: any) => t.sport?.slug === sportSlug)
         );
-        setMatches(filtered.length > 0 ? filtered : (demoMatchesBySport[sportSlug] || []));
+        setMatches(filtered.length > 0 ? filtered : matchItems);
       } else {
-        setMatches(demoMatchesBySport[sportSlug] || []);
+        setMatches([]);
       }
 
       const highlightsData = await highlightsAPI.getHighlights({ sport: sportSlug });
-      if (highlightsData?.data?.length > 0) {
-        setHighlights(highlightsData.data);
-      } else {
-        setHighlights(demoHighlightsBySport[sportSlug] || []);
-      }
+      const highlightItems = highlightsData?.data || (Array.isArray(highlightsData) ? highlightsData : []);
+      setHighlights(Array.isArray(highlightItems) ? highlightItems : []);
     } catch (err) {
-      console.log("Using demo data");
-      setMatches(demoMatchesBySport[sportSlug] || []);
-      setHighlights(demoHighlightsBySport[sportSlug] || []);
+      console.error("Error loading sport data from API:", err);
+      setMatches([]);
+      setHighlights([]);
     } finally {
       setLoading(false);
     }
@@ -184,7 +126,7 @@ export default function CategoriesPage() {
                         : "border-cyan-500/20 bg-[#0f1535]/50 hover:border-cyan-500/40 hover:bg-[#0f1535]"
                     }`}
                   >
-                    <img src={sport.icon} alt={sport.name} className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+                    <SportIcon slug={sport.slug} name={sport.name} iconUrl={sport.icon} className="w-8 h-8 sm:w-10 sm:h-10 text-cyan-400" />
                     <span className={`text-xs sm:text-sm font-semibold ${isSelected ? "text-cyan-400" : "text-white"}`}>
                       {sport.name}
                     </span>

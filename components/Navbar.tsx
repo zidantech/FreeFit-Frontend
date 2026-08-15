@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Menu, X, User, LogOut, Tv, Sparkles, LayoutGrid, UserCircle, MessageSquare } from "lucide-react";
+import { Menu, X, User, LogOut, Tv, Sparkles, LayoutGrid, UserCircle, MessageSquare, Shield } from "lucide-react";
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -15,8 +15,9 @@ export default function Navbar() {
 
   const mainNavLinks = [
     { href: "/home", label: "Live", icon: Tv },
-    { href: "/highlights", label: "Highlights", icon: Sparkles },
     { href: "/categories", label: "Categories", icon: LayoutGrid },
+    { href: "/teams", label: "Teams", icon: Shield },
+    { href: "/highlights", label: "Highlights", icon: Sparkles },
     { href: "/forum", label: "Forum", icon: MessageSquare },
   ];
 

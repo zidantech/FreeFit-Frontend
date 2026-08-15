@@ -8,18 +8,18 @@ import SportSelector from "@/components/SportSelector";
 import { ArrowRight, Loader2 } from "lucide-react";
 
 const defaultSports = [
-  { id: "1", name: "Football", slug: "football", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099672.png" },
-  { id: "2", name: "Tennis", slug: "tennis", icon: "https://cdn-icons-png.flaticon.com/128/2151/2151115.png" },
-  { id: "3", name: "Basketball", slug: "basketball", icon: "https://cdn-icons-png.flaticon.com/128/317/317709.png" },
-  { id: "4", name: "Cricket", slug: "cricket", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099683.png" },
-  { id: "5", name: "Hockey", slug: "hockey", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099692.png" },
-  { id: "6", name: "Golf", slug: "golf", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099710.png" },
-  { id: "7", name: "Baseball", slug: "baseball", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099695.png" },
-  { id: "8", name: "Wrestling", slug: "wrestling", icon: "https://cdn-icons-png.flaticon.com/128/2548/2548530.png" },
-  { id: "9", name: "Formula 1", slug: "formula-1", icon: "https://cdn-icons-png.flaticon.com/128/2964/2964514.png" },
-  { id: "10", name: "Boxing", slug: "boxing", icon: "https://cdn-icons-png.flaticon.com/128/2548/2548535.png" },
-  { id: "11", name: "Rugby", slug: "rugby", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099702.png" },
-  { id: "12", name: "Athletics", slug: "athletics", icon: "https://cdn-icons-png.flaticon.com/128/2548/2548540.png" },
+  { id: "1", name: "Football", slug: "football" },
+  { id: "2", name: "Tennis", slug: "tennis" },
+  { id: "3", name: "Basketball", slug: "basketball" },
+  { id: "4", name: "Cricket", slug: "cricket" },
+  { id: "5", name: "Hockey", slug: "hockey" },
+  { id: "6", name: "Golf", slug: "golf" },
+  { id: "7", name: "Baseball", slug: "baseball" },
+  { id: "8", name: "Formula 1", slug: "formula-1" },
+  { id: "9", name: "Boxing", slug: "boxing" },
+  { id: "10", name: "Rugby", slug: "rugby" },
+  { id: "11", name: "Wrestling", slug: "wrestling" },
+  { id: "12", name: "Athletics", slug: "athletics" },
 ];
 
 export default function InterestPage() {

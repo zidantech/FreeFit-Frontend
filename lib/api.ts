@@ -207,24 +207,31 @@ export const sportsAPI = {
   getTeams: async (leagueSlug: string) => fetchAPI(`/leagues/${leagueSlug}/teams/`),
 };
 
+export const dashboardAPI = {
+  getDashboard: async () => fetchAPI("/dashboard/"),
+};
+
 export const matchesAPI = {
   getLiveMatches: async () => fetchAPI("/matches/live/"),
-  getPreviousMatches: async (params?: { sport?: string; page?: number }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.sport) queryParams.append("sport", params.sport);
-    if (params?.page) queryParams.append("page", String(params.page));
-    return fetchAPI(`/matches/previous/?${queryParams.toString()}`);
-  },
+  getUpcomingMatches: async () => fetchAPI("/matches/upcoming/"),
+  getPastMatches: async () => fetchAPI("/matches/past/"),
   getMatchDetails: async (id: string) => fetchAPI(`/matches/${id}/`),
+};
+
+export const teamsAPI = {
+  getTeams: async () => fetchAPI("/teams/"),
+  getTeamDetails: async (id: string) => fetchAPI(`/teams/${id}/`),
 };
 
 export default {
   auth: authAPI,
   user: userAPI,
+  dashboard: dashboardAPI,
   streams: streamsAPI,
   schedule: scheduleAPI,
   highlights: highlightsAPI,
   news: newsAPI,
   sports: sportsAPI,
   matches: matchesAPI,
+  teams: teamsAPI,
 };

@@ -23,152 +23,6 @@ const sportDisplayNames: Record<string, string> = {
   athletics: "Athletics",
 };
 
-const demoHighlights: Record<string, any[]> = {
-  football: [
-    {
-      id: "h1",
-      title: "Premier League Best Goals - Matchweek 12",
-      thumbnail: "https://images.unsplash.com/photo-1629977007371-0ba395424741?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-      duration: "3:45",
-      views: "1.2M",
-      sport: "Football",
-    },
-    {
-      id: "h2",
-      title: "Champions League Final - Extended Highlights",
-      thumbnail: "https://images.unsplash.com/photo-1577223625816-7546f13df25d?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-      duration: "8:15",
-      views: "2.5M",
-      sport: "Football",
-    },
-    {
-      id: "h3",
-      title: "El Clasico: Real Madrid vs Barcelona - All Goals",
-      thumbnail: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-      duration: "6:30",
-      views: "3.1M",
-      sport: "Football",
-    },
-    {
-      id: "h4",
-      title: "Top 10 Free Kicks of the Season",
-      thumbnail: "https://images.unsplash.com/photo-1522778119026-d647f0565c6a?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
-      duration: "4:20",
-      views: "890K",
-      sport: "Football",
-    },
-    {
-      id: "h5",
-      title: "FA Cup Final Highlights",
-      thumbnail: "https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-      duration: "5:45",
-      views: "1.8M",
-      sport: "Football",
-    },
-    {
-      id: "h6",
-      title: "World Cup Best Moments 2026",
-      thumbnail: "https://images.unsplash.com/photo-1511886929837-354d827aae26?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-      duration: "10:00",
-      views: "5.2M",
-      sport: "Football",
-    },
-  ],
-  tennis: [
-    {
-      id: "ht1",
-      title: "Wimbledon Final: Sinner vs Alcaraz",
-      thumbnail: "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-      duration: "12:30",
-      views: "2.1M",
-      sport: "Tennis",
-    },
-    {
-      id: "ht2",
-      title: "US Open Top 10 Rallies",
-      thumbnail: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-      duration: "5:45",
-      views: "980K",
-      sport: "Tennis",
-    },
-    {
-      id: "ht3",
-      title: "Roland Garros Best Points",
-      thumbnail: "https://images.unsplash.com/photo-1599586120429-48281b6f0ece?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-      duration: "7:20",
-      views: "1.5M",
-      sport: "Tennis",
-    },
-  ],
-  basketball: [
-    {
-      id: "hb1",
-      title: "NBA Finals: Lakers vs Celtics Game 7",
-      thumbnail: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-      duration: "15:30",
-      views: "4.2M",
-      sport: "Basketball",
-    },
-    {
-      id: "hb2",
-      title: "Top 50 Dunks of the Season",
-      thumbnail: "https://images.unsplash.com/photo-1519861531473-9200263931a2?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-      duration: "8:45",
-      views: "3.5M",
-      sport: "Basketball",
-    },
-    {
-      id: "hb3",
-      title: "All-Star Weekend Highlights",
-      thumbnail: "https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-      duration: "6:15",
-      views: "2.8M",
-      sport: "Basketball",
-    },
-  ],
-  default: [
-    {
-      id: "hd1",
-      title: "Best Moments of the Season",
-      thumbnail: "https://images.unsplash.com/photo-1461896836934-bd315a73a2b2?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-      duration: "5:30",
-      views: "1.1M",
-      sport: "General",
-    },
-    {
-      id: "hd2",
-      title: "Epic Rivalry Match Highlights",
-      thumbnail: "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-      duration: "7:15",
-      views: "1.4M",
-      sport: "General",
-    },
-    {
-      id: "hd3",
-      title: "Championship Final Highlights",
-      thumbnail: "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800&q=80",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-      duration: "9:45",
-      views: "2.2M",
-      sport: "General",
-    },
-  ],
-};
-
 function getPrimaryInterest(): string {
   if (typeof window !== "undefined") {
     return localStorage.getItem("primaryInterest") || "football";
@@ -196,15 +50,13 @@ export default function HighlightsPage() {
 
     const fetchHighlights = async () => {
       try {
+        setLoading(true);
         const data = await highlightsAPI.getHighlights({ sport: interest });
-        if (data?.data?.length > 0) {
-          setHighlights(data.data);
-        } else {
-          setHighlights(demoHighlights[interest] || demoHighlights.default);
-        }
+        const items = data?.data || (Array.isArray(data) ? data : []);
+        setHighlights(Array.isArray(items) ? items : []);
       } catch (err) {
-        console.log("Using demo highlights");
-        setHighlights(demoHighlights[interest] || demoHighlights.default);
+        console.error("Error fetching highlights:", err);
+        setHighlights([]);
       } finally {
         setLoading(false);
       }
@@ -269,40 +121,50 @@ export default function HighlightsPage() {
 
           {/* Highlights Grid */}
           <section>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {highlights.map((highlight) => (
-                <div
-                  key={highlight.id}
-                  className="group relative rounded-xl overflow-hidden bg-[#0f1535] border border-cyan-500/20 hover:border-cyan-500/50 transition-all cursor-pointer"
-                  onClick={() => setActiveVideo(highlight.videoUrl)}
-                >
-                  <div className="aspect-video relative">
-                    <img
-                      src={highlight.thumbnail}
-                      alt={highlight.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                      <div className="w-14 h-14 bg-cyan-400/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg shadow-cyan-400/30">
-                        <Play className="w-7 h-7 text-[#0a0e27] ml-0.5" fill="currentColor" />
+            {highlights.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {highlights.map((highlight) => (
+                  <div
+                    key={highlight.id || highlight._id}
+                    className="group relative rounded-xl overflow-hidden bg-[#0f1535] border border-cyan-500/20 hover:border-cyan-500/50 transition-all cursor-pointer"
+                    onClick={() => setActiveVideo(highlight.video_url || highlight.videoUrl)}
+                  >
+                    <div className="aspect-video relative">
+                      <img
+                        src={highlight.thumbnail || highlight.banner || "https://images.unsplash.com/photo-1629977007371-0ba395424741?w=800&q=80"}
+                        alt={highlight.title || "Highlight"}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <div className="w-14 h-14 bg-cyan-400/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg shadow-cyan-400/30">
+                          <Play className="w-7 h-7 text-[#0a0e27] ml-0.5" fill="currentColor" />
+                        </div>
+                      </div>
+                      {highlight.duration && (
+                        <span className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 text-white text-xs rounded font-medium">
+                          {highlight.duration}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-white text-sm font-semibold line-clamp-2 group-hover:text-cyan-400 transition-colors">
+                        {highlight.title}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-cyan-400 text-xs">{highlight.sport?.name || highlight.sport || sportName}</span>
+                        {highlight.views && <span className="text-gray-500 text-xs">{highlight.views} views</span>}
                       </div>
                     </div>
-                    <span className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 text-white text-xs rounded font-medium">
-                      {highlight.duration}
-                    </span>
                   </div>
-                  <div className="p-4">
-                    <h3 className="text-white text-sm font-semibold line-clamp-2 group-hover:text-cyan-400 transition-colors">
-                      {highlight.title}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-cyan-400 text-xs">{highlight.sport || sportName}</span>
-                      <span className="text-gray-500 text-xs">{highlight.views} views</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-[#0f1535]/50 rounded-xl border border-cyan-500/20 text-gray-400">
+                <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-50 text-cyan-400" />
+                <p className="text-lg font-medium text-white mb-1">No Highlights Found</p>
+                <p className="text-sm">There are no highlight videos available for {sportName} at the moment.</p>
+              </div>
+            )}
           </section>
 
           {/* Discover More */}

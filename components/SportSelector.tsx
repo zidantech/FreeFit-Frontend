@@ -1,12 +1,10 @@
-"use client";
-
-import { useState } from "react";
+import { SportIcon } from "@/lib/sportsIcons";
 
 interface Sport {
   id: string;
   name: string;
   slug: string;
-  icon: string;
+  icon?: string;
 }
 
 interface SportSelectorProps {
@@ -50,11 +48,14 @@ export default function SportSelector({
                 : "border-cyan-500/30 bg-[#0f1535]/50 hover:border-cyan-500/50 hover:bg-[#0f1535]"
             }`}
           >
-            <img
-              src={sport.icon}
-              alt={sport.name}
-              className="w-8 h-8 sm:w-12 sm:h-12 object-contain"
-            />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
+              <SportIcon
+                slug={sport.slug}
+                name={sport.name}
+                iconUrl={sport.icon}
+                className="w-8 h-8 sm:w-10 sm:h-10 text-cyan-400"
+              />
+            </div>
             <span
               className={`text-sm sm:text-base font-semibold ${
                 isSelected ? "text-cyan-400" : "text-white"
