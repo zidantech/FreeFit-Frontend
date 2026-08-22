@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { authAPI, userAPI } from "@/lib/api";
+import { authAPI, interestAPI, userAPI } from "@/lib/api";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 export default function SignIn() {
@@ -26,34 +26,32 @@ export default function SignIn() {
         localStorage.setItem("remember_me", String(rememberMe));
       }
 
-      // Fetch user profile to get interests
+      // Fetch user profile optionally for user metadata
       try {
         const profile = await userAPI.getProfile();
         if (profile?.data) {
           localStorage.setItem("user", JSON.stringify(profile.data));
-
-          // Check if user has interests
-          if (profile.data.interests && profile.data.interests.length > 0) {
-            localStorage.setItem("interests", JSON.stringify(profile.data.interests));
-            localStorage.setItem("primaryInterest", profile.data.interests[0]);
-            router.push("/home");
-          } else {
-            // Redirect to interest selection for new users
-            router.push("/interest");
-          }
-        } else {
-          router.push(data.next || "/home");
         }
       } catch {
-        // If profile fetch fails, check localStorage for interests
-        const storedInterests = localStorage.getItem("interests");
-        if (storedInterests) {
-          const parsed = JSON.parse(storedInterests);
-          localStorage.setItem("primaryInterest", parsed[0] || "football");
+        // ignore profile error if auth succeeded
+      }
+
+      // Check current user's interest from GET /api/auth/interest/
+      try {
+        const interestData = await interestAPI.getInterest();
+        if (interestData && interestData.sport) {
+          // sport != null -> user already selected a sport -> Continue to Home
+          localStorage.setItem("currentInterest", JSON.stringify(interestData.sport));
+          localStorage.setItem("primaryInterest", (interestData.sport.name || "football").toLowerCase());
+          localStorage.setItem("interests", JSON.stringify([(interestData.sport.name || "football").toLowerCase()]));
           router.push("/home");
         } else {
+          // sport == null -> user has NOT selected an interest -> Choose your sport
           router.push("/interest");
         }
+      } catch (err) {
+        console.warn("Could not check interest endpoint, falling back to /interest:", err);
+        router.push("/interest");
       }
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");

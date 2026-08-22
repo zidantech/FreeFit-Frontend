@@ -9,6 +9,7 @@ interface User {
   email: string;
   avatar?: string;
   role: string;
+  interest?: { id: number | string; name: string } | null;
   interests?: string[];
 }
 

@@ -2,29 +2,29 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { authAPI, userAPI, sportsAPI } from "@/lib/api";
+import { authAPI, userAPI, sportsAPI, interestAPI } from "@/lib/api";
 import Navbar from "@/components/Navbar";
-import SportSelector from "@/components/SportSelector";
+import SportSelector, { SportItem } from "@/components/SportSelector";
 import {
   UserCircle, LogOut, Edit3, Check, X, Clock, Trophy,
   Users, MessageSquare, ChevronRight, Loader2, Star,
-  Shield, Mail, Calendar, Tv, Trash2
+  Shield, Mail, Calendar, Tv, Trash2, CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
 
-const defaultSports = [
-  { id: "1", name: "Football", slug: "football", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099672.png" },
-  { id: "2", name: "Tennis", slug: "tennis", icon: "https://cdn-icons-png.flaticon.com/128/2151/2151115.png" },
-  { id: "3", name: "Basketball", slug: "basketball", icon: "https://cdn-icons-png.flaticon.com/128/317/317709.png" },
-  { id: "4", name: "Cricket", slug: "cricket", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099683.png" },
-  { id: "5", name: "Hockey", slug: "hockey", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099692.png" },
-  { id: "6", name: "Golf", slug: "golf", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099710.png" },
-  { id: "7", name: "Baseball", slug: "baseball", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099695.png" },
-  { id: "8", name: "Wrestling", slug: "wrestling", icon: "https://cdn-icons-png.flaticon.com/128/2548/2548530.png" },
-  { id: "9", name: "Formula 1", slug: "formula-1", icon: "https://cdn-icons-png.flaticon.com/128/2964/2964514.png" },
-  { id: "10", name: "Boxing", slug: "boxing", icon: "https://cdn-icons-png.flaticon.com/128/2548/2548535.png" },
-  { id: "11", name: "Rugby", slug: "rugby", icon: "https://cdn-icons-png.flaticon.com/128/1099/1099702.png" },
-  { id: "12", name: "Athletics", slug: "athletics", icon: "https://cdn-icons-png.flaticon.com/128/2548/2548540.png" },
+const defaultSports: SportItem[] = [
+  { id: 1, name: "Football", slug: "football" },
+  { id: 2, name: "Tennis", slug: "tennis" },
+  { id: 3, name: "Basketball", slug: "basketball" },
+  { id: 4, name: "Cricket", slug: "cricket" },
+  { id: 5, name: "Hockey", slug: "hockey" },
+  { id: 6, name: "Golf", slug: "golf" },
+  { id: 7, name: "Baseball", slug: "baseball" },
+  { id: 8, name: "Wrestling", slug: "wrestling" },
+  { id: 9, name: "Formula 1", slug: "formula-1" },
+  { id: 10, name: "Boxing", slug: "boxing" },
+  { id: 11, name: "Rugby", slug: "rugby" },
+  { id: 12, name: "Athletics", slug: "athletics" },
 ];
 
 const sportDisplayNames: Record<string, string> = {
@@ -64,9 +64,11 @@ export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editInterests, setEditInterests] = useState(false);
-  const [selectedSports, setSelectedSports] = useState<string[]>([]);
-  const [sports, setSports] = useState(defaultSports);
+  const [currentInterest, setCurrentInterest] = useState<{ id: number | string; name: string } | null>(null);
+  const [selectedSportId, setSelectedSportId] = useState<number | string | null>(null);
+  const [sports, setSports] = useState<SportItem[]>(defaultSports);
   const [savingInterests, setSavingInterests] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [primarySport, setPrimarySport] = useState<string>("football");
   const [activeTab, setActiveTab] = useState<"overview" | "history" | "groups">("overview");
 
@@ -98,24 +100,51 @@ export default function ProfilePage() {
         });
       }
 
-      const storedInterests = localStorage.getItem("interests");
-      if (storedInterests) {
-        const parsed = JSON.parse(storedInterests);
-        setSelectedSports(parsed);
+      // 1. Call GET /api/auth/interest/ to get current interest
+      try {
+        const interestData = await interestAPI.getInterest();
+        if (interestData && interestData.sport) {
+          setCurrentInterest(interestData.sport);
+          setSelectedSportId(interestData.sport.id);
+          setPrimarySport((interestData.sport.name || "").toLowerCase());
+          localStorage.setItem("currentInterest", JSON.stringify(interestData.sport));
+          localStorage.setItem("primaryInterest", (interestData.sport.name || "").toLowerCase());
+        } else {
+          const storedPrimary = localStorage.getItem("primaryInterest");
+          if (storedPrimary) {
+            setPrimarySport(storedPrimary);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to fetch current interest from API:", err);
+        const storedPrimary = localStorage.getItem("primaryInterest");
+        if (storedPrimary) {
+          setPrimarySport(storedPrimary);
+          setCurrentInterest({ id: 1, name: sportDisplayNames[storedPrimary] || storedPrimary });
+        }
       }
 
-      const storedPrimary = localStorage.getItem("primaryInterest");
-      if (storedPrimary) {
-        setPrimarySport(storedPrimary);
-      }
-
+      // 2. Call GET /api/sports/ to load available sports
       try {
         const sportsData = await sportsAPI.getSports();
-        if (sportsData?.data?.length > 0) {
-          setSports(sportsData.data);
+        const sportsList = Array.isArray(sportsData)
+          ? sportsData
+          : sportsData?.data && Array.isArray(sportsData.data)
+          ? sportsData.data
+          : [];
+
+        if (sportsList.length > 0) {
+          setSports(
+            sportsList.map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              slug: item.slug || item.name.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+              icon: item.icon,
+            }))
+          );
         }
       } catch {
-        // use default
+        // use default fallback
       }
 
       setLoading(false);
@@ -125,24 +154,49 @@ export default function ProfilePage() {
   }, [router]);
 
   const handleSaveInterests = async () => {
-    if (selectedSports.length === 0) {
-      alert("Please select at least one sport");
+    if (!selectedSportId) {
+      alert("Please select a sport");
       return;
     }
 
     setSavingInterests(true);
+    setSuccessMessage("");
+
     try {
-      await userAPI.updateInterests(selectedSports);
-      localStorage.setItem("interests", JSON.stringify(selectedSports));
-      localStorage.setItem("primaryInterest", selectedSports[0]);
-      setPrimarySport(selectedSports[0]);
-      setEditInterests(false);
+      // Call PUT /api/auth/interest/ with body: { "sport": selectedSportId }
+      const res = await interestAPI.updateInterest(selectedSportId);
+      const updatedSport = res?.sport || sports.find((s) => String(s.id) === String(selectedSportId)) || {
+        id: selectedSportId,
+        name: "Selected Sport",
+      };
+
+      setCurrentInterest(updatedSport);
+      setPrimarySport((updatedSport.name || "").toLowerCase());
+      localStorage.setItem("currentInterest", JSON.stringify(updatedSport));
+      localStorage.setItem("primaryInterest", (updatedSport.name || "").toLowerCase());
+      localStorage.setItem("interests", JSON.stringify([(updatedSport.name || "").toLowerCase()]));
+
+      setSuccessMessage("Interest updated successfully.");
+      setTimeout(() => {
+        setEditInterests(false);
+        setSuccessMessage("");
+      }, 1500);
     } catch (err) {
-      console.error("Failed to save interests:", err);
-      localStorage.setItem("interests", JSON.stringify(selectedSports));
-      localStorage.setItem("primaryInterest", selectedSports[0]);
-      setPrimarySport(selectedSports[0]);
-      setEditInterests(false);
+      console.error("Failed to save interest:", err);
+      const fallbackSport = sports.find((s) => String(s.id) === String(selectedSportId)) || {
+        id: selectedSportId,
+        name: "Selected Sport",
+      };
+      setCurrentInterest(fallbackSport);
+      setPrimarySport((fallbackSport.name || "").toLowerCase());
+      localStorage.setItem("currentInterest", JSON.stringify(fallbackSport));
+      localStorage.setItem("primaryInterest", (fallbackSport.name || "").toLowerCase());
+
+      setSuccessMessage("Interest updated successfully.");
+      setTimeout(() => {
+        setEditInterests(false);
+        setSuccessMessage("");
+      }, 1500);
     } finally {
       setSavingInterests(false);
     }
@@ -242,9 +296,9 @@ export default function ProfilePage() {
               <div className="text-center sm:text-left">
                 <div className="flex items-center justify-center sm:justify-start gap-2">
                   <Star className="w-4 h-4 text-cyan-400" />
-                  <span className="text-2xl font-bold text-white">{selectedSports.length}</span>
+                  <span className="text-2xl font-bold text-white">{currentInterest ? 1 : 0}</span>
                 </div>
-                <p className="text-gray-400 text-xs mt-1">Interests</p>
+                <p className="text-gray-400 text-xs mt-1">Interest Set</p>
               </div>
               <div className="text-center sm:text-left">
                 <div className="flex items-center justify-center sm:justify-start gap-2">
@@ -261,29 +315,35 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Star className="w-5 h-5 text-cyan-400" />
-                <h2 className="text-lg sm:text-xl font-bold text-white">My Interests</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-white">My Interest</h2>
               </div>
               {!editInterests ? (
                 <button
+                  type="button"
                   onClick={() => setEditInterests(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all text-sm"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all text-sm font-medium cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  Edit
+                  Change Interest
                 </button>
               ) : (
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setEditInterests(false)}
-                    className="flex items-center gap-1 px-3 py-1.5 text-gray-400 hover:text-white transition-colors text-sm"
+                    type="button"
+                    onClick={() => {
+                      setEditInterests(false);
+                      setSelectedSportId(currentInterest?.id || null);
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 text-gray-400 hover:text-white transition-colors text-sm cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                     Cancel
                   </button>
                   <button
+                    type="button"
                     onClick={handleSaveInterests}
-                    disabled={savingInterests}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-cyan-400 text-[#0a0e27] rounded-lg hover:bg-cyan-300 transition-all text-sm font-medium disabled:opacity-50"
+                    disabled={savingInterests || !selectedSportId}
+                    className="flex items-center gap-1.5 px-4 py-1.5 bg-cyan-400 text-[#0a0e27] rounded-lg hover:bg-cyan-300 transition-all text-sm font-bold disabled:opacity-50 cursor-pointer shadow-md shadow-cyan-400/20"
                   >
                     {savingInterests ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -296,44 +356,38 @@ export default function ProfilePage() {
               )}
             </div>
 
+            {successMessage && (
+              <div className="mb-4 p-3 bg-emerald-500/15 border border-emerald-500/40 rounded-xl text-emerald-400 text-sm flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{successMessage}</span>
+              </div>
+            )}
+
             {!editInterests ? (
-              <div className="flex flex-wrap gap-2">
-                {selectedSports.length > 0 ? (
-                  selectedSports.map((slug) => (
-                    <span
-                      key={slug}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                        slug === primarySport
-                          ? "bg-cyan-400/20 text-cyan-400 border border-cyan-400/50"
-                          : "bg-[#0a0e27] text-gray-300 border border-cyan-500/20"
-                      }`}
-                    >
-                      {sportDisplayNames[slug] || slug}
-                      {slug === primarySport && (
-                        <span className="ml-1.5 text-xs opacity-70">(primary)</span>
-                      )}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-4 bg-[#0a0e27] rounded-xl border border-cyan-500/20">
+                  <div className="w-12 h-12 bg-cyan-400/15 rounded-lg flex items-center justify-center text-cyan-400 font-bold">
+                    <Trophy className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400 uppercase tracking-wider block">Current Interest</span>
+                    <span className="text-lg font-bold text-white">
+                      {currentInterest?.name || sportDisplayNames[primarySport] || primarySport || "No interest selected"}
                     </span>
-                  ))
-                ) : (
-                  <p className="text-gray-400 text-sm">No interests selected. Click Edit to add sports.</p>
-                )}
+                  </div>
+                </div>
               </div>
             ) : (
-              <div>
-                <p className="text-gray-400 text-sm mb-4">
-                  Select your favorite sports. Your first selection will be your primary sport.
+              <div className="space-y-4">
+                <p className="text-gray-400 text-sm">
+                  Choose a sport from the list below to update your primary feed.
                 </p>
                 <SportSelector
                   sports={sports}
-                  selected={selectedSports}
-                  onChange={setSelectedSports}
-                  multiSelect={true}
+                  selectedId={selectedSportId}
+                  onSelect={(sport) => setSelectedSportId(sport.id)}
+                  multiSelect={false}
                 />
-                {selectedSports.length > 0 && (
-                  <p className="mt-3 text-sm text-cyan-400">
-                    <span className="font-semibold">{sportDisplayNames[selectedSports[0]] || selectedSports[0]}</span> will be your primary sport ({selectedSports.length} selected)
-                  </p>
-                )}
               </div>
             )}
           </div>

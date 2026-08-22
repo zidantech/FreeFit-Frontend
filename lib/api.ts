@@ -18,6 +18,7 @@ const setTokens = (access: string, refresh: string) => {
   if (typeof window !== "undefined") {
     localStorage.setItem("access_token", access);
     localStorage.setItem("refresh_token", refresh);
+    document.cookie = `access_token=${access}; path=/; max-age=604800; SameSite=Lax`;
   }
 };
 
@@ -27,6 +28,9 @@ const clearTokens = () => {
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
     localStorage.removeItem("interests");
+    localStorage.removeItem("primaryInterest");
+    localStorage.removeItem("currentInterest");
+    document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
   }
 };
 
@@ -123,6 +127,19 @@ export const authAPI = {
     access: getAccessToken(),
     refresh: getRefreshToken(),
   }),
+};
+
+export const interestAPI = {
+  getInterest: async (): Promise<{ sport: { id: number; name: string } | null }> => {
+    return fetchAPI("/auth/interest/");
+  },
+  updateInterest: async (sportId: number | string): Promise<{ sport: { id: number; name: string } }> => {
+    const id = typeof sportId === "string" && !isNaN(Number(sportId)) ? Number(sportId) : sportId;
+    return fetchAPI("/auth/interest/", {
+      method: "PUT",
+      body: JSON.stringify({ sport: id }),
+    });
+  },
 };
 
 export const userAPI = {
@@ -225,6 +242,7 @@ export const teamsAPI = {
 
 export default {
   auth: authAPI,
+  interest: interestAPI,
   user: userAPI,
   dashboard: dashboardAPI,
   streams: streamsAPI,

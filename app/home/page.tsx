@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { authAPI, dashboardAPI, matchesAPI, streamsAPI, scheduleAPI, sportsAPI } from "@/lib/api";
+import { authAPI, dashboardAPI, matchesAPI, streamsAPI, scheduleAPI, sportsAPI, interestAPI } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import VideoPlayer from "@/components/VideoPlayer";
 import MatchCard from "@/components/MatchCard";
@@ -51,10 +51,6 @@ export default function HomePage() {
       return;
     }
 
-    const interest = getPrimaryInterest();
-    setPrimarySport(interest);
-    setSportName(sportDisplayNames[interest] || interest.charAt(0).toUpperCase() + interest.slice(1));
-
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -78,7 +74,6 @@ export default function HomePage() {
         }
       } catch (err) {
         console.error("Error loading dashboard data:", err);
-        // On error, clear matches gracefully - NO dummy fallback data
         setLiveMatches([]);
         setUpcomingMatches([]);
         setPastMatches([]);
@@ -87,7 +82,38 @@ export default function HomePage() {
       }
     };
 
-    fetchData();
+    const initPage = async () => {
+      // Verify user interest
+      try {
+        const interestData = await interestAPI.getInterest();
+        if (interestData && interestData.sport === null) {
+          // If sport is null, redirect to choose sport screen
+          router.push("/interest");
+          return;
+        }
+
+        if (interestData?.sport) {
+          const sportNameStr = interestData.sport.name;
+          setPrimarySport(sportNameStr.toLowerCase());
+          setSportName(sportNameStr);
+          localStorage.setItem("currentInterest", JSON.stringify(interestData.sport));
+          localStorage.setItem("primaryInterest", sportNameStr.toLowerCase());
+        } else {
+          const interest = getPrimaryInterest();
+          setPrimarySport(interest);
+          setSportName(sportDisplayNames[interest] || interest.charAt(0).toUpperCase() + interest.slice(1));
+        }
+      } catch (err) {
+        console.warn("Could not check interest from API, continuing with local interest:", err);
+        const interest = getPrimaryInterest();
+        setPrimarySport(interest);
+        setSportName(sportDisplayNames[interest] || interest.charAt(0).toUpperCase() + interest.slice(1));
+      }
+
+      await fetchData();
+    };
+
+    initPage();
   }, [router]);
 
   if (loading) {
