@@ -72,7 +72,18 @@ export default function MatchCard(props: MatchCardProps) {
   const awayScore = away.score ?? match?.away_score ?? match?.score2 ?? (isLive || isFinished ? 0 : undefined);
 
   const leagueName = props.league || props.tournament || match?.league || match?.tournament?.name || match?.sport?.name || "";
-  const matchTime = props.startTime || props.start_time || props.date || match?.start_time || match?.startTime || match?.date;
+  const rawDate = match?.match_date || match?.date || props.date;
+  const rawTime = match?.match_time || match?.time || props.startTime || props.start_time || match?.start_time || match?.startTime;
+  let formattedDateTime = "";
+  if (rawDate && rawTime) {
+    formattedDateTime = `${rawDate} • ${rawTime.length > 5 ? rawTime.substring(0, 5) : rawTime}`;
+  } else if (rawDate) {
+    formattedDateTime = rawDate;
+  } else if (rawTime) {
+    formattedDateTime = !isNaN(new Date(rawTime).getTime())
+      ? new Date(rawTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : rawTime;
+  }
 
   return (
     <div className={`bg-[#0f1535] border border-cyan-500/20 rounded-xl overflow-hidden hover:border-cyan-500/50 transition-all ${className}`}>
@@ -88,10 +99,10 @@ export default function MatchCard(props: MatchCardProps) {
             <span className="text-gray-400 text-xs font-medium uppercase px-2 py-0.5 bg-gray-800 rounded">
               FT
             </span>
-          ) : matchTime ? (
+          ) : formattedDateTime ? (
             <span className="flex items-center gap-1 text-cyan-400 text-xs font-medium">
               <Clock className="w-3 h-3" />
-              {new Date(matchTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {formattedDateTime}
             </span>
           ) : (
             <span className="text-gray-400 text-xs font-medium uppercase">UPCOMING</span>

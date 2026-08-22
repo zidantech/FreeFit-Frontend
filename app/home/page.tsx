@@ -54,15 +54,22 @@ export default function HomePage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Call Dashboard API (/api/dashboard/)
-        const dashboardData = await dashboardAPI.getDashboard();
 
-        // Handle various response wrappers
-        const data = dashboardData?.data || dashboardData || {};
+        const [liveRes, upcomingRes, pastRes] = await Promise.allSettled([
+          matchesAPI.getLiveMatches(),
+          matchesAPI.getUpcomingMatches(),
+          matchesAPI.getPastMatches(),
+        ]);
 
-        const live = data.live_matches || data.liveMatches || (Array.isArray(data) ? data.filter((m: any) => m.is_live) : []);
-        const upcoming = data.upcoming_matches || data.upcomingMatches || (Array.isArray(data) ? data.filter((m: any) => !m.is_live && !m.is_finished) : []);
-        const past = data.past_matches || data.previous_matches || data.pastMatches || (Array.isArray(data) ? data.filter((m: any) => m.is_finished) : []);
+        const live = liveRes.status === "fulfilled"
+          ? (Array.isArray(liveRes.value) ? liveRes.value : liveRes.value?.data || liveRes.value?.live_matches || [])
+          : [];
+        const upcoming = upcomingRes.status === "fulfilled"
+          ? (Array.isArray(upcomingRes.value) ? upcomingRes.value : upcomingRes.value?.data || upcomingRes.value?.upcoming_matches || [])
+          : [];
+        const past = pastRes.status === "fulfilled"
+          ? (Array.isArray(pastRes.value) ? pastRes.value : pastRes.value?.data || pastRes.value?.past_matches || [])
+          : [];
 
         setLiveMatches(Array.isArray(live) ? live : []);
         setUpcomingMatches(Array.isArray(upcoming) ? upcoming : []);
@@ -73,7 +80,7 @@ export default function HomePage() {
           setFeaturedStream(live[0]);
         }
       } catch (err) {
-        console.error("Error loading dashboard data:", err);
+        console.error("Error loading matches data:", err);
         setLiveMatches([]);
         setUpcomingMatches([]);
         setPastMatches([]);
