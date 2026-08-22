@@ -66,6 +66,7 @@ export default function ProfilePage() {
   const [editInterests, setEditInterests] = useState(false);
   const [currentInterest, setCurrentInterest] = useState<{ id: number | string; name: string } | null>(null);
   const [selectedSportId, setSelectedSportId] = useState<number | string | null>(null);
+  const [interestsList, setInterestsList] = useState<string[]>([]);
   const [sports, setSports] = useState<SportItem[]>(defaultSports);
   const [savingInterests, setSavingInterests] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -100,19 +101,40 @@ export default function ProfilePage() {
         });
       }
 
+      // Load existing interests list from localStorage
+      let accumulatedInterests: string[] = [];
+      const storedInterests = localStorage.getItem("interests");
+      if (storedInterests) {
+        try {
+          const parsed = JSON.parse(storedInterests);
+          if (Array.isArray(parsed)) {
+            accumulatedInterests = parsed;
+          }
+        } catch {}
+      }
+
       // 1. Call GET /api/auth/interest/ to get current interest
       try {
         const interestData = await interestAPI.getInterest();
         if (interestData && interestData.sport) {
+          const sportSlug = (interestData.sport.name || "").toLowerCase();
           setCurrentInterest(interestData.sport);
           setSelectedSportId(interestData.sport.id);
-          setPrimarySport((interestData.sport.name || "").toLowerCase());
+          setPrimarySport(sportSlug);
+
+          if (!accumulatedInterests.includes(sportSlug)) {
+            accumulatedInterests = [...accumulatedInterests, sportSlug];
+          }
+
           localStorage.setItem("currentInterest", JSON.stringify(interestData.sport));
-          localStorage.setItem("primaryInterest", (interestData.sport.name || "").toLowerCase());
+          localStorage.setItem("primaryInterest", sportSlug);
         } else {
           const storedPrimary = localStorage.getItem("primaryInterest");
           if (storedPrimary) {
             setPrimarySport(storedPrimary);
+            if (!accumulatedInterests.includes(storedPrimary)) {
+              accumulatedInterests = [...accumulatedInterests, storedPrimary];
+            }
           }
         }
       } catch (err) {
@@ -121,8 +143,14 @@ export default function ProfilePage() {
         if (storedPrimary) {
           setPrimarySport(storedPrimary);
           setCurrentInterest({ id: 1, name: sportDisplayNames[storedPrimary] || storedPrimary });
+          if (!accumulatedInterests.includes(storedPrimary)) {
+            accumulatedInterests = [...accumulatedInterests, storedPrimary];
+          }
         }
       }
+
+      setInterestsList(accumulatedInterests);
+      localStorage.setItem("interests", JSON.stringify(accumulatedInterests));
 
       // 2. Call GET /api/sports/ to load available sports
       try {
@@ -170,11 +198,16 @@ export default function ProfilePage() {
         name: "Selected Sport",
       };
 
+      const sportSlug = (updatedSport.name || "").toLowerCase();
+      const updatedInterests = Array.from(new Set([...interestsList, sportSlug]));
+
       setCurrentInterest(updatedSport);
-      setPrimarySport((updatedSport.name || "").toLowerCase());
+      setPrimarySport(sportSlug);
+      setInterestsList(updatedInterests);
+
       localStorage.setItem("currentInterest", JSON.stringify(updatedSport));
-      localStorage.setItem("primaryInterest", (updatedSport.name || "").toLowerCase());
-      localStorage.setItem("interests", JSON.stringify([(updatedSport.name || "").toLowerCase()]));
+      localStorage.setItem("primaryInterest", sportSlug);
+      localStorage.setItem("interests", JSON.stringify(updatedInterests));
 
       setSuccessMessage("Interest updated successfully.");
       setTimeout(() => {
@@ -187,10 +220,16 @@ export default function ProfilePage() {
         id: selectedSportId,
         name: "Selected Sport",
       };
+      const sportSlug = (fallbackSport.name || "").toLowerCase();
+      const updatedInterests = Array.from(new Set([...interestsList, sportSlug]));
+
       setCurrentInterest(fallbackSport);
-      setPrimarySport((fallbackSport.name || "").toLowerCase());
+      setPrimarySport(sportSlug);
+      setInterestsList(updatedInterests);
+
       localStorage.setItem("currentInterest", JSON.stringify(fallbackSport));
-      localStorage.setItem("primaryInterest", (fallbackSport.name || "").toLowerCase());
+      localStorage.setItem("primaryInterest", sportSlug);
+      localStorage.setItem("interests", JSON.stringify(updatedInterests));
 
       setSuccessMessage("Interest updated successfully.");
       setTimeout(() => {
@@ -296,9 +335,11 @@ export default function ProfilePage() {
               <div className="text-center sm:text-left">
                 <div className="flex items-center justify-center sm:justify-start gap-2">
                   <Star className="w-4 h-4 text-cyan-400" />
-                  <span className="text-2xl font-bold text-white">{currentInterest ? 1 : 0}</span>
+                  <span className="text-2xl font-bold text-white">
+                    {interestsList.length || (currentInterest ? 1 : 0)}
+                  </span>
                 </div>
-                <p className="text-gray-400 text-xs mt-1">Interest Set</p>
+                <p className="text-gray-400 text-xs mt-1">Interests</p>
               </div>
               <div className="text-center sm:text-left">
                 <div className="flex items-center justify-center sm:justify-start gap-2">
@@ -364,18 +405,42 @@ export default function ProfilePage() {
             )}
 
             {!editInterests ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-center gap-3 p-4 bg-[#0a0e27] rounded-xl border border-cyan-500/20">
                   <div className="w-12 h-12 bg-cyan-400/15 rounded-lg flex items-center justify-center text-cyan-400 font-bold">
                     <Trophy className="w-6 h-6" />
                   </div>
                   <div>
-                    <span className="text-xs text-gray-400 uppercase tracking-wider block">Current Interest</span>
+                    <span className="text-xs text-gray-400 uppercase tracking-wider block">Current Active Interest</span>
                     <span className="text-lg font-bold text-white">
                       {currentInterest?.name || sportDisplayNames[primarySport] || primarySport || "No interest selected"}
                     </span>
                   </div>
                 </div>
+
+                {interestsList.length > 0 && (
+                  <div className="pt-2">
+                    <span className="text-xs text-gray-400 block mb-2 font-medium">
+                      All Selected Interests ({interestsList.length}):
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {interestsList.map((slug) => (
+                        <span
+                          key={slug}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 ${
+                            slug === primarySport
+                              ? "bg-cyan-400/20 text-cyan-300 border border-cyan-400/50 shadow-sm shadow-cyan-400/20"
+                              : "bg-[#0a0e27] text-gray-300 border border-cyan-500/20"
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${slug === primarySport ? "bg-cyan-400 animate-pulse" : "bg-gray-500"}`} />
+                          {sportDisplayNames[slug] || slug.charAt(0).toUpperCase() + slug.slice(1)}
+                          {slug === primarySport && <span className="text-[10px] text-cyan-400 opacity-80">(active)</span>}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-4">

@@ -100,21 +100,37 @@ export default function InterestPage() {
       // Call PUT /api/auth/interest/ with { "sport": SPORT_ID }
       const res = await interestAPI.updateInterest(selectedSport.id);
       const savedSport = res?.sport || selectedSport;
+      const sportSlug = (savedSport.name || "").toLowerCase();
+
+      let existingInterests: string[] = [];
+      try {
+        const parsed = JSON.parse(localStorage.getItem("interests") || "[]");
+        if (Array.isArray(parsed)) existingInterests = parsed;
+      } catch {}
+      const updatedList = Array.from(new Set([...existingInterests, sportSlug]));
 
       // Sync local storage
       localStorage.setItem("currentInterest", JSON.stringify(savedSport));
-      localStorage.setItem("primaryInterest", (savedSport.name || "").toLowerCase());
-      localStorage.setItem("interests", JSON.stringify([(savedSport.name || "").toLowerCase()]));
+      localStorage.setItem("primaryInterest", sportSlug);
+      localStorage.setItem("interests", JSON.stringify(updatedList));
 
       router.push("/home");
     } catch (err: any) {
       console.error("Failed to save interest:", err);
       setError(err?.message || "Failed to save your interest. Please try again.");
 
+      const fallbackSlug = (selectedSport.name || "").toLowerCase();
+      let existingInterests: string[] = [];
+      try {
+        const parsed = JSON.parse(localStorage.getItem("interests") || "[]");
+        if (Array.isArray(parsed)) existingInterests = parsed;
+      } catch {}
+      const updatedList = Array.from(new Set([...existingInterests, fallbackSlug]));
+
       // Graceful fallback for offline / mock testing
       localStorage.setItem("currentInterest", JSON.stringify(selectedSport));
-      localStorage.setItem("primaryInterest", (selectedSport.name || "").toLowerCase());
-      localStorage.setItem("interests", JSON.stringify([(selectedSport.name || "").toLowerCase()]));
+      localStorage.setItem("primaryInterest", fallbackSlug);
+      localStorage.setItem("interests", JSON.stringify(updatedList));
       router.push("/home");
     } finally {
       setSaving(false);
