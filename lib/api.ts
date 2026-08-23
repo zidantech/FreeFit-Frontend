@@ -70,8 +70,11 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     }
 
     return handleResponse(response);
-  } catch (error) {
+  } catch (error: any) {
     console.error(`API Error on ${endpoint}:`, error);
+    if (error?.name === "TypeError" && error?.message?.includes("Failed to fetch")) {
+      throw new Error("Unable to connect to server. The backend was waking up from sleep — please try again now.");
+    }
     throw error;
   }
 }
@@ -79,7 +82,22 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
 async function handleResponse(response: Response) {
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || error.detail || `HTTP ${response.status}: ${response.statusText}`);
+    let errorMessage = error.message || error.detail;
+    
+    if (!errorMessage && typeof error === "object" && error !== null) {
+      const messages = Object.entries(error)
+        .map(([key, val]) => {
+          if (Array.isArray(val)) return val.join(" ");
+          if (typeof val === "string") return val;
+          return "";
+        })
+        .filter(Boolean);
+      if (messages.length > 0) {
+        errorMessage = messages.join(" ");
+      }
+    }
+
+    throw new Error(errorMessage || `HTTP ${response.status}: ${response.statusText}`);
   }
   return response.json();
 }

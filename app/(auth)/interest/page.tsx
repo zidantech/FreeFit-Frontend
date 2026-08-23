@@ -156,8 +156,12 @@ export default function InterestPage() {
     <main className="min-h-screen bg-[#0a0e27] px-4 sm:px-6 py-8 sm:py-12 flex flex-col justify-between">
       <div className="max-w-4xl mx-auto w-full">
         <div className="flex items-center justify-between mb-8 sm:mb-12">
-          <Link href="/" className="text-2xl sm:text-3xl font-bold text-cyan-400 tracking-wide">
-            Freefit.com
+          <Link href="/" className="inline-block group">
+            <img
+              src="/logo.png"
+              alt="FreeFit"
+              className="h-9 sm:h-11 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+            />
           </Link>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
             <Sparkles className="w-3.5 h-3.5" /> Step 1 of 1

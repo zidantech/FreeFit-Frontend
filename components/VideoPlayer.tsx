@@ -92,34 +92,24 @@ export default function VideoPlayer({
   const [chatOpen, setChatOpen] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>(DEMO_MESSAGES);
   const [inputText, setInputText] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
 
-  // ── Video Effects ────────────────────────────────────────────────
+  // ── Chat Effects (Internal scroll only, never scrolls the window) ──
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const updateProgress = () => {
-      if (video.duration) {
-        setProgress((video.currentTime / video.duration) * 100);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
       }
-    };
-
-    const handleLoaded = () => setDuration(video.duration);
-
-    video.addEventListener("timeupdate", updateProgress);
-    video.addEventListener("loadedmetadata", handleLoaded);
-    video.addEventListener("ended", () => setIsPlaying(false));
-
-    return () => {
-      video.removeEventListener("timeupdate", updateProgress);
-      video.removeEventListener("loadedmetadata", handleLoaded);
-    };
-  }, []);
-
-  // ── Chat Effects ─────────────────────────────────────────────────
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   }, [messages, chatOpen]);
 
   // ── Video Handlers ───────────────────────────────────────────────
@@ -250,9 +240,8 @@ export default function VideoPlayer({
 
           {/* Controls Overlay */}
           <div
-            className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 sm:p-4 transition-opacity duration-300 ${
-              showControls || !isPlaying ? "opacity-100" : "opacity-0"
-            }`}
+            className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 sm:p-4 transition-opacity duration-300 ${showControls || !isPlaying ? "opacity-100" : "opacity-0"
+              }`}
           >
             {/* Progress Bar */}
             <input
@@ -363,7 +352,7 @@ export default function VideoPlayer({
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4 scrollbar-thin">
+          <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-3 py-4 space-y-4 scrollbar-thin">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -386,16 +375,14 @@ export default function VideoPlayer({
 
                 {/* Content */}
                 <div
-                  className={`flex-1 min-w-0 ${
-                    msg.isMe ? "items-end" : "items-start"
-                  } flex flex-col`}
+                  className={`flex-1 min-w-0 ${msg.isMe ? "items-end" : "items-start"
+                    } flex flex-col`}
                 >
                   {/* Name + Time */}
                   <div className="flex items-center gap-2 mb-0.5">
                     <span
-                      className={`text-xs font-semibold ${
-                        msg.isMe ? "text-[#00d4ff]" : "text-white"
-                      }`}
+                      className={`text-xs font-semibold ${msg.isMe ? "text-[#00d4ff]" : "text-white"
+                        }`}
                     >
                       {msg.user}
                     </span>
@@ -406,11 +393,10 @@ export default function VideoPlayer({
 
                   {/* Message Bubble */}
                   <div
-                    className={`px-3 py-2 rounded-xl text-sm leading-relaxed max-w-[220px] ${
-                      msg.isMe
+                    className={`px-3 py-2 rounded-xl text-sm leading-relaxed max-w-[220px] ${msg.isMe
                         ? "bg-[#00d4ff]/15 text-white rounded-br-sm border border-[#00d4ff]/20"
                         : "bg-[#1a1f4a] text-gray-200 rounded-bl-sm border border-white/5"
-                    }`}
+                      }`}
                   >
                     {msg.text}
                   </div>
@@ -439,7 +425,6 @@ export default function VideoPlayer({
                 </div>
               </div>
             ))}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}
