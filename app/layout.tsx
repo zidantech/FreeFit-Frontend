@@ -8,6 +8,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Free-Fit.com - Live Sports Streaming",
   description: "Stream live sports matches, watch highlights, and follow your favorite teams",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/logo-icon.png",
+  },
 };
 
 export default function RootLayout({
