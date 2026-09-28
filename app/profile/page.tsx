@@ -72,6 +72,9 @@ export default function ProfilePage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [primarySport, setPrimarySport] = useState<string>("football");
   const [activeTab, setActiveTab] = useState<"overview" | "history" | "groups">("overview");
+  const [editingName, setEditingName] = useState(false);
+  const [fullNameInput, setFullNameInput] = useState("");
+  const [savingName, setSavingName] = useState(false);
 
   useEffect(() => {
     if (!authAPI.isAuthenticated()) {
@@ -80,21 +83,49 @@ export default function ProfilePage() {
     }
 
     const loadUser = async () => {
+      let cachedFullName = "";
       try {
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
-          setUser(JSON.parse(storedUser));
+          const parsed = JSON.parse(storedUser);
+          setUser(parsed);
+          if (parsed.name && parsed.name !== "User" && parsed.name !== "Username") {
+            cachedFullName = parsed.name;
+          }
         }
 
-        const data = await userAPI.getProfile();
-        if (data?.data) {
-          setUser(data.data);
-          localStorage.setItem("user", JSON.stringify(data.data));
+        const data = await authAPI.getMe();
+        if (data) {
+          const emailName = data.email ? data.email.split("@")[0] : "";
+          const emailKey = data.email ? `user_fullname_${data.email.toLowerCase().trim()}` : "";
+          const localFullName = (emailKey ? localStorage.getItem(emailKey) : null) ||
+                                localStorage.getItem("user_full_name") ||
+                                cachedFullName;
+
+          const backendFullName = [data.first_name, data.last_name].filter(Boolean).join(" ") || data.full_name || data.name || "";
+          const fullName = backendFullName || localFullName || data.first_name || emailName || "User";
+          const nameParts = fullName.trim().split(/\s+/);
+          const firstName = data.first_name || (nameParts[0] || emailName || "User");
+          const lastName = data.last_name || (nameParts.length > 1 ? nameParts.slice(1).join(" ") : "");
+
+          const userData = {
+            ...data,
+            first_name: firstName,
+            last_name: lastName,
+            name: fullName,
+            email: data.email || "user@example.com",
+          };
+          setUser(userData);
+          localStorage.setItem("user", JSON.stringify(userData));
         }
       } catch (err) {
         console.error("Failed to fetch profile:", err);
+        const storedFullName = localStorage.getItem("user_full_name") || "";
+        const nameParts = storedFullName ? storedFullName.split(/\s+/) : [];
         setUser({
-          name: "User",
+          name: storedFullName || "User",
+          first_name: nameParts[0] || "",
+          last_name: nameParts.slice(1).join(" ") || "",
           email: "user@example.com",
           role: "user",
           joinDate: "2026-01-01",
@@ -110,7 +141,7 @@ export default function ProfilePage() {
           if (Array.isArray(parsed)) {
             accumulatedInterests = parsed;
           }
-        } catch {}
+        } catch { }
       }
 
       // 1. Call GET /api/auth/interest/ to get current interest
@@ -158,8 +189,8 @@ export default function ProfilePage() {
         const sportsList = Array.isArray(sportsData)
           ? sportsData
           : sportsData?.data && Array.isArray(sportsData.data)
-          ? sportsData.data
-          : [];
+            ? sportsData.data
+            : [];
 
         if (sportsList.length > 0) {
           setSports(
@@ -246,6 +277,47 @@ export default function ProfilePage() {
     router.push("/signin");
   };
 
+  const handleSaveName = async () => {
+    const trimmed = fullNameInput.trim();
+    if (!trimmed) return;
+    setSavingName(true);
+
+    const nameParts = trimmed.split(/\s+/);
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+
+    const updatedUser = {
+      ...(user || {}),
+      name: trimmed,
+      first_name: firstName,
+      last_name: lastName,
+    };
+    setUser(updatedUser);
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      localStorage.setItem("user_full_name", trimmed);
+      localStorage.setItem("user_first_name", firstName);
+      localStorage.setItem("user_last_name", lastName);
+      if (user?.email) {
+        localStorage.setItem(`user_fullname_${user.email.toLowerCase().trim()}`, trimmed);
+      }
+    }
+
+    try {
+      await authAPI.updateMe({
+        first_name: firstName,
+        last_name: lastName,
+        name: trimmed,
+      });
+    } catch (err) {
+      console.warn("Could not save name to server:", err);
+    } finally {
+      setSavingName(false);
+      setEditingName(false);
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
       year: "numeric",
@@ -291,7 +363,12 @@ export default function ProfilePage() {
                 <UserCircle className="w-10 h-10 sm:w-12 sm:h-12 text-cyan-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-white">{user?.name || "User"}</h1>
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-white">{user?.first_name || "User"}</h1>
+                  <span className="text-sm text-gray-400 font-medium">
+                    {`#${(user?.first_name || (user?.name ? user.name.split(/\s+/)[0] : "")).replace(/\s+/g, "")}${(user?.last_name || (user?.name ? user.name.split(/\s+/).slice(1).join("") : "")).replace(/\s+/g, "")}` || "#user"}
+                  </span>
+                </div>
                 <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-400">
                   <span className="flex items-center gap-1">
                     <Mail className="w-4 h-4" />
@@ -427,11 +504,10 @@ export default function ProfilePage() {
                       {interestsList.map((slug) => (
                         <span
                           key={slug}
-                          className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 ${
-                            slug === primarySport
+                          className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 ${slug === primarySport
                               ? "bg-cyan-400/20 text-cyan-300 border border-cyan-400/50 shadow-sm shadow-cyan-400/20"
                               : "bg-[#0a0e27] text-gray-300 border border-cyan-500/20"
-                          }`}
+                            }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${slug === primarySport ? "bg-cyan-400 animate-pulse" : "bg-gray-500"}`} />
                           {sportDisplayNames[slug] || slug.charAt(0).toUpperCase() + slug.slice(1)}
@@ -463,11 +539,10 @@ export default function ProfilePage() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === tab
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab
                     ? "bg-cyan-400/20 text-cyan-400"
                     : "text-gray-400 hover:text-white"
-                }`}
+                  }`}
               >
                 {tab === "overview" && <UserCircle className="w-4 h-4" />}
                 {tab === "history" && <Clock className="w-4 h-4" />}
@@ -484,9 +559,58 @@ export default function ProfilePage() {
               <div className="bg-[#0f1535] border border-cyan-500/20 rounded-xl p-6 sm:p-8">
                 <h3 className="text-lg font-bold text-white mb-4">Account Details</h3>
                 <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 py-3 border-b border-cyan-500/10">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-3 border-b border-cyan-500/10">
                     <span className="text-gray-400 text-sm">Full Name</span>
-                    <span className="text-white font-medium">{user?.name || "Not set"}</span>
+                    {!editingName ? (
+                      <div className="flex items-center gap-3">
+                        <span className="text-white font-medium text-sm sm:text-base">
+                          {user?.name && user?.name !== "User" && user?.name !== "Username" ? user.name : "Not set"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFullNameInput(user?.name && user?.name !== "User" && user?.name !== "Username" ? user.name : "");
+                            setEditingName(true);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 rounded-lg transition-all cursor-pointer"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          Edit
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <input
+                          type="text"
+                          value={fullNameInput}
+                          onChange={(e) => setFullNameInput(e.target.value)}
+                          placeholder="Enter your full name"
+                          className="bg-[#080d26] border border-cyan-500/30 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400 w-full sm:w-64 transition-all"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveName();
+                            if (e.key === "Escape") setEditingName(false);
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setEditingName(false)}
+                          className="p-1.5 text-gray-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                          title="Cancel"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveName}
+                          disabled={savingName || !fullNameInput.trim()}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-400 hover:bg-cyan-300 text-[#0a0e27] rounded-lg font-bold text-xs disabled:opacity-50 transition-all cursor-pointer shadow-sm shadow-cyan-400/20"
+                        >
+                          {savingName ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                          Save
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 py-3 border-b border-cyan-500/10">
                     <span className="text-gray-400 text-sm">Email Address</span>

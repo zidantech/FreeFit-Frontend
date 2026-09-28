@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { authAPI, userAPI } from "@/lib/api";
+import { authAPI } from "@/lib/api";
 
 interface User {
   id: string;
   name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   avatar?: string;
   role: string;
@@ -29,14 +31,27 @@ export function useAuth() {
           if (storedUser) {
             setUser(JSON.parse(storedUser));
           } else {
-            const data = await userAPI.getProfile();
-            if (data?.data) {
-              setUser(data.data);
-              localStorage.setItem("user", JSON.stringify(data.data));
+            const data = await authAPI.getMe();
+            if (data) {
+              const firstName = data.first_name || "";
+              const lastName = data.last_name || "";
+              const fullName = [firstName, lastName].filter(Boolean).join(" ") || "FreeFit Member";
+              const userData = {
+                ...data,
+                first_name: firstName,
+                last_name: lastName,
+                name: fullName,
+                email: data.email || localStorage.getItem("user_email") || "user@example.com",
+                role: "user",
+              };
+              setUser(userData);
+              localStorage.setItem("user", JSON.stringify(userData));
             } else {
               setUser({
                 id: "1",
                 name: "FreeFit Member",
+                first_name: "",
+                last_name: "",
                 email: localStorage.getItem("user_email") || "user@example.com",
                 role: "user",
               });
@@ -46,6 +61,8 @@ export function useAuth() {
           setUser({
             id: "1",
             name: "FreeFit Member",
+            first_name: "",
+            last_name: "",
             email: localStorage.getItem("user_email") || "user@example.com",
             role: "user",
           });

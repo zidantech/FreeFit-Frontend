@@ -63,7 +63,9 @@ export default function Navbar() {
                     }`}
                 >
                   <UserCircle className="w-4 h-4" />
-                  <span className="max-w-[120px] truncate">{user?.name || "Account"}</span>
+                  <span className="max-w-[120px] truncate">
+                    {user?.first_name || (user?.name ? user.name.split(" ")[0] : "Account")}
+                  </span>
                 </Link>
                 <button
                   onClick={logout}

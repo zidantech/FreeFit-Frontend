@@ -138,10 +138,21 @@ async function refreshAccessToken() {
 }
 
 export const authAPI = {
-  register: async (email: string, password: string, confirmPassword: string) => {
+  register: async (email: string, password: string, confirmPassword: string, firstName: string, lastName: string) => {
+    const fullName = [firstName, lastName].filter(Boolean).join(" ");
     return fetchAPI("/auth/register/", {
       method: "POST",
-      body: JSON.stringify({ email, password, confirm_password: confirmPassword }),
+      body: JSON.stringify({
+        email,
+        password,
+        confirm_password: confirmPassword,
+        first_name: firstName,
+        last_name: lastName,
+        firstName,
+        lastName,
+        name: fullName,
+        full_name: fullName,
+      }),
     });
   },
 
@@ -169,6 +180,28 @@ export const authAPI = {
     access: getAccessToken(),
     refresh: getRefreshToken(),
   }),
+
+  getMe: async () => {
+    return fetchAPI("/auth/me/");
+  },
+
+  updateMe: async (profileData: { first_name?: string; last_name?: string; name?: string }) => {
+    try {
+      return await fetchAPI("/auth/me/", {
+        method: "PATCH",
+        body: JSON.stringify(profileData),
+      });
+    } catch {
+      try {
+        return await fetchAPI("/auth/me/", {
+          method: "PUT",
+          body: JSON.stringify(profileData),
+        });
+      } catch {
+        return null;
+      }
+    }
+  },
 };
 
 export const interestAPI = {
@@ -187,24 +220,28 @@ export const interestAPI = {
 export const userAPI = {
   getProfile: async () => {
     try {
-      return await fetchAPI("/users/me/");
+      return await fetchAPI("/auth/me/");
     } catch {
-      if (typeof window !== "undefined") {
-        const stored = localStorage.getItem("user");
-        if (stored) {
-          try {
-            return { data: JSON.parse(stored) };
-          } catch {}
+      try {
+        return await fetchAPI("/users/me/");
+      } catch {
+        if (typeof window !== "undefined") {
+          const stored = localStorage.getItem("user");
+          if (stored) {
+            try {
+              return { data: JSON.parse(stored) };
+            } catch {}
+          }
         }
+        return {
+          data: {
+            name: "FreeFit User",
+            email: "user@example.com",
+            role: "user",
+            joinDate: "2026-01-01",
+          },
+        };
       }
-      return {
-        data: {
-          name: "FreeFit User",
-          email: "user@example.com",
-          role: "user",
-          joinDate: "2026-01-01",
-        },
-      };
     }
   },
   updateProfile: async (profileData: { name?: string; avatar?: string; interests?: string[] }) => {

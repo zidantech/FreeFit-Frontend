@@ -36,9 +36,23 @@ export default function SignIn() {
 
       // Fetch user profile optionally for user metadata
       try {
-        const profile = await userAPI.getProfile();
-        if (profile?.data) {
-          localStorage.setItem("user", JSON.stringify(profile.data));
+        const profile = await authAPI.getMe();
+        if (profile) {
+          const storedFullName = localStorage.getItem(`user_fullname_${email.toLowerCase().trim()}`) || localStorage.getItem("user_full_name") || "";
+          const backendFullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || profile.full_name || profile.name || "";
+          const fullName = backendFullName || storedFullName || (profile.first_name ? profile.first_name : email.split("@")[0]);
+          const nameParts = fullName.trim().split(/\s+/);
+          const firstName = profile.first_name || (nameParts[0] || email.split("@")[0]);
+          const lastName = profile.last_name || (nameParts.length > 1 ? nameParts.slice(1).join(" ") : "");
+
+          const userData = {
+            ...profile,
+            first_name: firstName,
+            last_name: lastName,
+            name: fullName,
+            email: profile.email || email,
+          };
+          localStorage.setItem("user", JSON.stringify(userData));
         }
       } catch {
         // ignore profile error if auth succeeded

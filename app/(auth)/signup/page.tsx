@@ -42,8 +42,20 @@ export default function SignUp() {
     }, 3500);
 
     try {
-      const data = await authAPI.register(email, password, confirmPassword);
+      const nameParts = name.trim().split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+      const data = await authAPI.register(email, password, confirmPassword, firstName, lastName);
       clearTimeout(wakeTimer);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user_full_name", name.trim());
+        localStorage.setItem("user_first_name", firstName);
+        localStorage.setItem("user_last_name", lastName);
+        localStorage.setItem(`user_fullname_${email.toLowerCase().trim()}`, name.trim());
+      }
+
       setSuccess("Account created successfully! Redirecting to sign in...");
       setTimeout(() => {
         router.push(data.next || "/signin");
