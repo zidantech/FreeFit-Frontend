@@ -13,22 +13,15 @@ export default function SignIn() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [wakingUp, setWakingUp] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setWakingUp(false);
     setError("");
-
-    const wakeTimer = setTimeout(() => {
-      setWakingUp(true);
-    }, 3500);
 
     try {
       await authAPI.login(email, password);
-      clearTimeout(wakeTimer);
 
       if (typeof window !== "undefined") {
         localStorage.setItem("remember_me", String(rememberMe));
@@ -74,12 +67,9 @@ export default function SignIn() {
         router.push("/interest");
       }
     } catch (err: any) {
-      clearTimeout(wakeTimer);
       setError(err.message || "Invalid email or password. Please try again.");
     } finally {
-      clearTimeout(wakeTimer);
       setLoading(false);
-      setWakingUp(false);
     }
   };
 
@@ -247,18 +237,12 @@ export default function SignIn() {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    {wakingUp ? "Waking up server..." : "Signing In..."}
+                    Signing In...
                   </>
                 ) : (
                   "Sign In"
                 )}
               </button>
-
-              {wakingUp && (
-                <p className="text-[11px] text-amber-300/90 text-center animate-fadeIn">
-                  ⚡ Free backend instances sleep after inactivity and take a few seconds to start up. Please wait...
-                </p>
-              )}
             </form>
 
             {/* Social Divider */}

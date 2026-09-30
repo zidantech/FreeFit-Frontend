@@ -75,6 +75,7 @@ export default function ProfilePage() {
   const [editingName, setEditingName] = useState(false);
   const [fullNameInput, setFullNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState("");
 
   useEffect(() => {
     if (!authAPI.isAuthenticated()) {
@@ -90,7 +91,7 @@ export default function ProfilePage() {
           try {
             cachedUser = JSON.parse(storedUser);
             setUser(cachedUser);
-          } catch {}
+          } catch { }
         }
 
         const data = await authAPI.getMe();
@@ -98,8 +99,8 @@ export default function ProfilePage() {
           const email = (data.email || cachedUser?.email || "").toLowerCase().trim();
           const emailKey = email ? `user_fullname_${email}` : "";
           const storedFullName = (emailKey ? localStorage.getItem(emailKey) : null) ||
-                                localStorage.getItem("user_full_name") ||
-                                (cachedUser?.name && cachedUser.name !== "User" && cachedUser.name !== "Username" ? cachedUser.name : "");
+            localStorage.getItem("user_full_name") ||
+            (cachedUser?.name && cachedUser.name !== "User" && cachedUser.name !== "Username" ? cachedUser.name : "");
 
           const backendFullName = [data.first_name, data.last_name].filter(Boolean).join(" ") || data.full_name || data.name || "";
           const fullName = backendFullName || storedFullName || (email ? email.split("@")[0] : "User");
@@ -284,40 +285,40 @@ export default function ProfilePage() {
     const trimmed = fullNameInput.trim();
     if (!trimmed) return;
     setSavingName(true);
+    setNameError("");
 
     const nameParts = trimmed.split(/\s+/);
     const firstName = nameParts[0] || "";
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
 
-    const updatedUser = {
-      ...(user || {}),
-      name: trimmed,
-      first_name: firstName,
-      last_name: lastName,
-    };
-    setUser(updatedUser);
-
-    if (typeof window !== "undefined") {
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      localStorage.setItem("user_full_name", trimmed);
-      localStorage.setItem("user_first_name", firstName);
-      localStorage.setItem("user_last_name", lastName);
-      if (user?.email) {
-        localStorage.setItem(`user_fullname_${user.email.toLowerCase().trim()}`, trimmed);
-      }
-    }
-
     try {
-      await authAPI.updateMe({
+      await userAPI.updateProfile({
         first_name: firstName,
         last_name: lastName,
-        name: trimmed,
       });
+      const updatedUser = {
+        ...(user || {}),
+        name: trimmed,
+        first_name: firstName,
+        last_name: lastName,
+      };
+      setUser(updatedUser);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        localStorage.setItem("user_full_name", trimmed);
+        localStorage.setItem("user_first_name", firstName);
+        localStorage.setItem("user_last_name", lastName);
+        if (user?.email) {
+          localStorage.setItem(`user_fullname_${user.email.toLowerCase().trim()}`, trimmed);
+        }
+      }
+      setEditingName(false);
     } catch (err) {
       console.warn("Could not save name to server:", err);
+      setNameError("Name changing not allowed");
     } finally {
       setSavingName(false);
-      setEditingName(false);
     }
   };
 
@@ -508,8 +509,8 @@ export default function ProfilePage() {
                         <span
                           key={slug}
                           className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 ${slug === primarySport
-                              ? "bg-cyan-400/20 text-cyan-300 border border-cyan-400/50 shadow-sm shadow-cyan-400/20"
-                              : "bg-[#0a0e27] text-gray-300 border border-cyan-500/20"
+                            ? "bg-cyan-400/20 text-cyan-300 border border-cyan-400/50 shadow-sm shadow-cyan-400/20"
+                            : "bg-[#0a0e27] text-gray-300 border border-cyan-500/20"
                             }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${slug === primarySport ? "bg-cyan-400 animate-pulse" : "bg-gray-500"}`} />
@@ -543,8 +544,8 @@ export default function ProfilePage() {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab
-                    ? "bg-cyan-400/20 text-cyan-400"
-                    : "text-gray-400 hover:text-white"
+                  ? "bg-cyan-400/20 text-cyan-400"
+                  : "text-gray-400 hover:text-white"
                   }`}
               >
                 {tab === "overview" && <UserCircle className="w-4 h-4" />}
@@ -573,6 +574,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={() => {
                             setFullNameInput(user?.name && user?.name !== "User" && user?.name !== "Username" ? user.name : "");
+                            setNameError("");
                             setEditingName(true);
                           }}
                           className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 rounded-lg transition-all cursor-pointer"
@@ -615,6 +617,7 @@ export default function ProfilePage() {
                       </div>
                     )}
                   </div>
+                  {nameError && <p role="alert" className="text-sm text-red-400">{nameError}</p>}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 py-3 border-b border-cyan-500/10">
                     <span className="text-gray-400 text-sm">Email Address</span>
                     <span className="text-white font-medium">{user?.email || "Not set"}</span>

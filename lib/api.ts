@@ -244,15 +244,17 @@ export const userAPI = {
       }
     }
   },
-  updateProfile: async (profileData: { name?: string; avatar?: string; interests?: string[] }) => {
-    try {
-      return await fetchAPI("/users/me/", {
-        method: "PATCH",
-        body: JSON.stringify(profileData),
-      });
-    } catch {
-      return { data: profileData };
-    }
+  updateProfile: async (profileData: {
+    name?: string;
+    first_name?: string;
+    last_name?: string;
+    avatar?: string;
+    interests?: string[];
+  }) => {
+    return fetchAPI("/auth/me/", {
+      method: "PUT",
+      body: JSON.stringify(profileData),
+    });
   },
   updateInterests: async (interests: string[]) => {
     try {

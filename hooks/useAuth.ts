@@ -33,7 +33,7 @@ export function useAuth() {
             try {
               cachedUser = JSON.parse(storedUser);
               setUser(cachedUser);
-            } catch {}
+            } catch { }
           }
 
           const data = await authAPI.getMe();
@@ -41,8 +41,8 @@ export function useAuth() {
             const email = (data.email || cachedUser?.email || "").toLowerCase().trim();
             const emailKey = email ? `user_fullname_${email}` : "";
             const storedFullName = (emailKey ? localStorage.getItem(emailKey) : null) ||
-                                  localStorage.getItem("user_full_name") ||
-                                  (cachedUser?.name && cachedUser.name !== "FreeFit Member" ? cachedUser.name : "");
+              localStorage.getItem("user_full_name") ||
+              (cachedUser?.name && cachedUser.name !== "FreeFit Member" ? cachedUser.name : "");
 
             const backendFullName = [data.first_name, data.last_name].filter(Boolean).join(" ") || data.full_name || data.name || "";
             const fullName = backendFullName || storedFullName || (email ? email.split("@")[0] : "FreeFit Member");
