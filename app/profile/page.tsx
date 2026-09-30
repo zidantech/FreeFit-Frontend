@@ -83,44 +83,47 @@ export default function ProfilePage() {
     }
 
     const loadUser = async () => {
-      let cachedFullName = "";
+      let cachedUser: any = null;
       try {
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
-          const parsed = JSON.parse(storedUser);
-          setUser(parsed);
-          if (parsed.name && parsed.name !== "User" && parsed.name !== "Username") {
-            cachedFullName = parsed.name;
-          }
+          try {
+            cachedUser = JSON.parse(storedUser);
+            setUser(cachedUser);
+          } catch {}
         }
 
         const data = await authAPI.getMe();
         if (data) {
-          const emailName = data.email ? data.email.split("@")[0] : "";
-          const emailKey = data.email ? `user_fullname_${data.email.toLowerCase().trim()}` : "";
-          const localFullName = (emailKey ? localStorage.getItem(emailKey) : null) ||
+          const email = (data.email || cachedUser?.email || "").toLowerCase().trim();
+          const emailKey = email ? `user_fullname_${email}` : "";
+          const storedFullName = (emailKey ? localStorage.getItem(emailKey) : null) ||
                                 localStorage.getItem("user_full_name") ||
-                                cachedFullName;
+                                (cachedUser?.name && cachedUser.name !== "User" && cachedUser.name !== "Username" ? cachedUser.name : "");
 
           const backendFullName = [data.first_name, data.last_name].filter(Boolean).join(" ") || data.full_name || data.name || "";
-          const fullName = backendFullName || localFullName || data.first_name || emailName || "User";
+          const fullName = backendFullName || storedFullName || (email ? email.split("@")[0] : "User");
           const nameParts = fullName.trim().split(/\s+/);
-          const firstName = data.first_name || (nameParts[0] || emailName || "User");
-          const lastName = data.last_name || (nameParts.length > 1 ? nameParts.slice(1).join(" ") : "");
+          const firstName = data.first_name || cachedUser?.first_name || (nameParts[0] || "User");
+          const lastName = data.last_name || cachedUser?.last_name || (nameParts.length > 1 ? nameParts.slice(1).join(" ") : "");
 
           const userData = {
             ...data,
             first_name: firstName,
             last_name: lastName,
             name: fullName,
-            email: data.email || "user@example.com",
+            email: data.email || cachedUser?.email || "user@example.com",
           };
           setUser(userData);
           localStorage.setItem("user", JSON.stringify(userData));
+          if (fullName && fullName !== "User") {
+            localStorage.setItem("user_full_name", fullName);
+            if (email) localStorage.setItem(`user_fullname_${email}`, fullName);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch profile:", err);
-        const storedFullName = localStorage.getItem("user_full_name") || "";
+        const storedFullName = localStorage.getItem("user_full_name") || cachedUser?.name || "";
         const nameParts = storedFullName ? storedFullName.split(/\s+/) : [];
         setUser({
           name: storedFullName || "User",

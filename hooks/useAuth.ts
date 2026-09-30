@@ -28,34 +28,51 @@ export function useAuth() {
       if (authenticated) {
         try {
           const storedUser = localStorage.getItem("user");
+          let cachedUser: any = null;
           if (storedUser) {
-            setUser(JSON.parse(storedUser));
-          } else {
-            const data = await authAPI.getMe();
-            if (data) {
-              const firstName = data.first_name || "";
-              const lastName = data.last_name || "";
-              const fullName = [firstName, lastName].filter(Boolean).join(" ") || "FreeFit Member";
-              const userData = {
-                ...data,
-                first_name: firstName,
-                last_name: lastName,
-                name: fullName,
-                email: data.email || localStorage.getItem("user_email") || "user@example.com",
-                role: "user",
-              };
-              setUser(userData);
-              localStorage.setItem("user", JSON.stringify(userData));
-            } else {
-              setUser({
-                id: "1",
-                name: "FreeFit Member",
-                first_name: "",
-                last_name: "",
-                email: localStorage.getItem("user_email") || "user@example.com",
-                role: "user",
-              });
+            try {
+              cachedUser = JSON.parse(storedUser);
+              setUser(cachedUser);
+            } catch {}
+          }
+
+          const data = await authAPI.getMe();
+          if (data) {
+            const email = (data.email || cachedUser?.email || "").toLowerCase().trim();
+            const emailKey = email ? `user_fullname_${email}` : "";
+            const storedFullName = (emailKey ? localStorage.getItem(emailKey) : null) ||
+                                  localStorage.getItem("user_full_name") ||
+                                  (cachedUser?.name && cachedUser.name !== "FreeFit Member" ? cachedUser.name : "");
+
+            const backendFullName = [data.first_name, data.last_name].filter(Boolean).join(" ") || data.full_name || data.name || "";
+            const fullName = backendFullName || storedFullName || (email ? email.split("@")[0] : "FreeFit Member");
+            const nameParts = fullName.trim().split(/\s+/);
+            const firstName = data.first_name || cachedUser?.first_name || (nameParts[0] || "FreeFit Member");
+            const lastName = data.last_name || cachedUser?.last_name || (nameParts.length > 1 ? nameParts.slice(1).join(" ") : "");
+
+            const userData = {
+              ...data,
+              first_name: firstName,
+              last_name: lastName,
+              name: fullName,
+              email: data.email || cachedUser?.email || "user@example.com",
+              role: cachedUser?.role || "user",
+            };
+            setUser(userData);
+            localStorage.setItem("user", JSON.stringify(userData));
+            if (fullName && fullName !== "FreeFit Member") {
+              localStorage.setItem("user_full_name", fullName);
+              if (email) localStorage.setItem(`user_fullname_${email}`, fullName);
             }
+          } else if (!cachedUser) {
+            setUser({
+              id: "1",
+              name: "FreeFit Member",
+              first_name: "",
+              last_name: "",
+              email: localStorage.getItem("user_email") || "user@example.com",
+              role: "user",
+            });
           }
         } catch {
           setUser({
