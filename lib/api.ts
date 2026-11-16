@@ -405,6 +405,25 @@ export const matchesAPI = {
   },
 };
 
+export const chatAPI = {
+  getMessages: async (matchId: string | number) => {
+    return fetchAPI(`/auth/matches/${encodeURIComponent(String(matchId))}/messages/`);
+  },
+  getWebSocketUrl: (matchId: string | number, token: string) => {
+    let wsBase = process.env.NEXT_PUBLIC_WS_URL;
+    if (!wsBase) {
+      try {
+        const apiUrl = new URL(API_BASE_URL);
+        const protocol = apiUrl.protocol === "https:" ? "wss:" : "ws:";
+        wsBase = `${protocol}//${apiUrl.host}`;
+      } catch {
+        wsBase = "wss://free-fit-backend.onrender.com";
+      }
+    }
+    return `${wsBase}/ws/chat/${encodeURIComponent(String(matchId))}/?token=${encodeURIComponent(token)}`;
+  },
+};
+
 export const teamsAPI = {
   getTeams: async () => {
     try {

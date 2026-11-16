@@ -246,10 +246,7 @@ export default function MatchDetailClient() {
               </div>
             </div>
 
-            {/* Live Chat Column (1 Col) */}
-            <div className="lg:col-span-1 h-[500px] sm:h-[600px]">
-              <LiveChat streamId={matchId} />
-            </div>
+            <LiveChat matchId={matchId} isLive={isLive} />
 
           </div>
 

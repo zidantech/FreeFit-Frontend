@@ -8,7 +8,7 @@ import VideoPlayer from "@/components/VideoPlayer";
 import MatchCard from "@/components/MatchCard";
 import {
   Play, Trophy, Calendar, Clock, ChevronRight,
-  Flame, Loader2, Tv, History, Timer
+  Flame, Loader2, Tv, History, Timer, MessageCircle
 } from "lucide-react";
 import Link from "next/link";
 
